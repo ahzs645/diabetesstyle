@@ -179,19 +179,25 @@ export function TargetLines({
   );
 }
 
-/** Left-side glucose tick labels (drawn outside the plot, LTR digits). */
+/**
+ * Left-side glucose tick labels (drawn outside the plot, LTR digits).
+ * Tick positions stay in mg/dL (the scale is linear, so pixels are unit-
+ * independent); `format` controls how each value is labelled.
+ */
 export function GlucoseTicks({
   ticks,
   yMax,
   height,
   x,
   bold = [],
+  format = String,
 }: {
   ticks: number[];
   yMax: number;
   height: number;
   x: number;
   bold?: number[];
+  format?: (v: number) => string;
 }): ReactElement {
   return (
     <g>
@@ -206,7 +212,7 @@ export function GlucoseTicks({
           textAnchor="end"
           direction="ltr"
         >
-          {tick}
+          {format(tick)}
         </text>
       ))}
     </g>

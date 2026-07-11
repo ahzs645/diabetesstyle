@@ -1,5 +1,11 @@
 import type { ReactElement } from "react";
-import { formatNumber, makeT, monthName, weekdayName } from "../../lib/libre-report/i18n";
+import {
+  formatGlucose,
+  glucoseUnitLabel,
+  makeT,
+  monthName,
+  weekdayName,
+} from "../../lib/libre-report/i18n";
 import type { DayStats } from "../../lib/libre-report/stats";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
@@ -10,7 +16,7 @@ import { ReportPage } from "./report-header";
  */
 export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { lang } = ctx;
+  const { lang, unit } = ctx;
   const lastDay = new Date(ctx.period.end);
   lastDay.setDate(lastDay.getDate() - 1);
   const year = lastDay.getFullYear();
@@ -61,8 +67,8 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
                         {"averageGlucose" in cell && cell.averageGlucose !== null ? (
                           <div className="lr-cal-data">
                             <div className="lr-cal-avg">
-                              <b dir="ltr">{formatNumber(cell.averageGlucose, lang)}</b>{" "}
-                              <span className="lr-cal-unit">{t("mgdl")}</span>
+                              <b dir="ltr">{formatGlucose(cell.averageGlucose, unit, lang)}</b>{" "}
+                              <span className="lr-cal-unit">{glucoseUnitLabel(unit, lang)}</span>
                             </div>
                             <div className="lr-cal-scans">
                               <b dir="ltr">{cell.scansViews}</b>{" "}

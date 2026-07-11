@@ -1,5 +1,9 @@
 import type { ReactElement } from "react";
-import { formatNumber, makeT } from "../../lib/libre-report/i18n";
+import {
+  formatGlucose,
+  glucoseUnitLabel,
+  makeT,
+} from "../../lib/libre-report/i18n";
 import { minutesOfDay, readingsInPeriod, twoHourAverages } from "../../lib/libre-report/stats";
 import { AutoWidth } from "./auto-width";
 import { AgpChart } from "./charts";
@@ -9,7 +13,7 @@ import { hourLabel, LR_COLORS, xForMinutes } from "./primitives";
 
 export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { stats, lang } = ctx;
+  const { stats, lang, unit } = ctx;
   const historic = readingsInPeriod(ctx.data, ctx.period).filter((r) => r.historic);
   const blockAverages = twoHourAverages(historic);
   const foodInPeriod = ctx.data.food.filter(
@@ -22,13 +26,13 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
         <div className="lr-dp-avgcell">
           <div className="lr-dp-avglabel">{t("dailyAverage")}</div>
           <div className="lr-dp-avgvalue">
-            {stats.averageGlucose === null ? "—" : formatNumber(stats.averageGlucose, lang)}
+            {stats.averageGlucose === null ? "—" : formatGlucose(stats.averageGlucose, unit, lang)}
           </div>
         </div>
         {blockAverages.map((v, i) => (
           <div key={i} className="lr-dp-blockcell">
             <div className="lr-dp-blockhour">{hourLabel(i * 2)}</div>
-            <div className="lr-dp-blockvalue">{v === null ? "" : Math.round(v)}</div>
+            <div className="lr-dp-blockvalue">{v === null ? "" : formatGlucose(v, unit, lang)}</div>
           </div>
         ))}
         <div className="lr-dp-blockcell">
@@ -39,7 +43,7 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
       <div className="lr-dp-chart">
         <div className="lr-dp-rowlabel">
           <span className="lr-dp-icon">💧</span> {t("glucose")}
-          <div className="lr-dp-unit">{t("mgdl")}</div>
+          <div className="lr-dp-unit">{glucoseUnitLabel(unit, lang)}</div>
         </div>
         {ctx.agp ? (
           <AutoWidth>
@@ -48,6 +52,7 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
                 profile={ctx.agp!}
                 targets={ctx.targets}
                 lang={lang}
+                unit={unit}
                 height={300}
                 width={w}
                 yTicks={[0, 25, 50, 70, 100, 125, 150, 180, 200, 225, 250, 275, 300, 325, 350]}

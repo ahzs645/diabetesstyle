@@ -1,5 +1,10 @@
 import type { ReactElement } from "react";
-import { formatNumber, makeT } from "../../lib/libre-report/i18n";
+import {
+  formatGlucose,
+  formatNumber,
+  glucoseUnitLabel,
+  makeT,
+} from "../../lib/libre-report/i18n";
 import { readingsInPeriod, sensorUsageByTime } from "../../lib/libre-report/stats";
 import { LowEventsChart, MedianChart, SensorUsageChart } from "./charts";
 import type { ReportContext } from "./context";
@@ -7,8 +12,9 @@ import { ReportPage } from "./report-header";
 
 export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { stats, targets, lang } = ctx;
+  const { stats, targets, lang, unit } = ctx;
   const tir = stats.timeInRanges;
+  const unitLabel = glucoseUnitLabel(unit, lang);
   const usage = sensorUsageByTime(
     readingsInPeriod(ctx.data, ctx.period).filter((r) => r.historic),
     ctx.period.days,
@@ -36,10 +42,11 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
             {t("glucose")}{" "}
             <span className="lr-gmi-inline" dir="ltr">
               GMI{" "}
-              {stats.gmiPercent === null ? "—" : `${formatNumber(stats.gmiPercent, lang, 1)}%`}{" "}
-              {stats.gmiMmolMol === null
-                ? ""
-                : `| ${formatNumber(stats.gmiMmolMol, lang)} ${t("mmolMol")}`}
+              {stats.gmiPercent === null
+                ? "—"
+                : unit === "mmol/L"
+                  ? `${formatNumber(stats.gmiMmolMol!, lang)} ${t("mmolMol")}`
+                  : `${formatNumber(stats.gmiPercent, lang, 1)}%`}
             </span>
           </h3>
           <div className="lr-snapshot-row">
@@ -49,8 +56,8 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
                 <div className="lr-kpi-value" dir="ltr">
                   {stats.averageGlucose === null
                     ? "—"
-                    : formatNumber(stats.averageGlucose, lang)}
-                  <span className="lr-kpi-unit">{t("mgdl")}</span>
+                    : formatGlucose(stats.averageGlucose, unit, lang)}
+                  <span className="lr-kpi-unit">{unitLabel}</span>
                 </div>
               </div>
               <div className="lr-mini-row">
@@ -67,7 +74,7 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
               </div>
             </div>
             {ctx.agp ? (
-              <MedianChart profile={ctx.agp} targets={targets} lang={lang} />
+              <MedianChart profile={ctx.agp} targets={targets} lang={lang} unit={unit} />
             ) : (
               <div className="lr-empty">{t("noData")}</div>
             )}
@@ -88,7 +95,7 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
                 </b>
               </div>
             </div>
-            <LowEventsChart events={stats.lowEvents} lang={lang} threshold={targets.low} />
+            <LowEventsChart events={stats.lowEvents} lang={lang} unit={unit} threshold={targets.low} />
           </div>
 
           <h3 className="lr-section-rule">{t("sensorUsage")}</h3>

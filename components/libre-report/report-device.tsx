@@ -1,11 +1,11 @@
 import type { ReactElement } from "react";
-import { makeT } from "../../lib/libre-report/i18n";
+import { formatGlucose, glucoseUnitLabel, makeT } from "../../lib/libre-report/i18n";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
 
 export function DeviceDetailsReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { targets } = ctx;
+  const { targets, lang, unit } = ctx;
   return (
     <ReportPage ctx={ctx} title={t("deviceDetails")} subtitle={null} id="device-details">
       <div className="lr-columns">
@@ -36,9 +36,9 @@ export function DeviceDetailsReport({ ctx }: { ctx: ReportContext }): ReactEleme
                 <th>{t("targetRangeLabel")}</th>
                 <td colSpan={2}>
                   <b dir="ltr">
-                    {targets.low}-{targets.high}
+                    {formatGlucose(targets.low, unit, lang)}-{formatGlucose(targets.high, unit, lang)}
                   </b>{" "}
-                  {t("mgdl")}
+                  {glucoseUnitLabel(unit, lang)}
                 </td>
               </tr>
               <tr>

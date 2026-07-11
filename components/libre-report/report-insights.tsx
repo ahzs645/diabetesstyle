@@ -1,5 +1,12 @@
 import type { ReactElement } from "react";
-import { formatNumber, formatPct, formatPeriod, makeT } from "../../lib/libre-report/i18n";
+import {
+  formatGlucose,
+  formatNumber,
+  formatPct,
+  formatPeriod,
+  glucoseUnitLabel,
+  makeT,
+} from "../../lib/libre-report/i18n";
 import { readingsInPeriod } from "../../lib/libre-report/stats";
 import { AutoWidth } from "./auto-width";
 import { PatternsScatterChart, TimeInRangesBar } from "./charts";
@@ -8,8 +15,9 @@ import { ReportPage } from "./report-header";
 
 export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { stats, targets, lang } = ctx;
+  const { stats, targets, lang, unit } = ctx;
   const tir = stats.timeInRanges;
+  const unitLabel = glucoseUnitLabel(unit, lang);
   const historic = readingsInPeriod(ctx.data, ctx.period).filter((r) => r.historic);
   const pattern =
     stats.lowEvents.length > 0 ? t("lowsDetectedPattern") : t("noHarmfulPatterns");
@@ -44,6 +52,7 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
                 ]}
                 targets={targets}
                 lang={lang}
+                unit={unit}
                 height={210}
                 goals={{
                   high: `${t("goal")}: <${formatPct(25, lang)}`,
@@ -64,11 +73,11 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
               <div className="lr-bigstat-value" dir="ltr">
                 {stats.averageGlucose === null
                   ? "—"
-                  : formatNumber(stats.averageGlucose, lang)}
-                <span className="lr-bigstat-unit">{t("mgdl")}</span>
+                  : formatGlucose(stats.averageGlucose, unit, lang)}
+                <span className="lr-bigstat-unit">{unitLabel}</span>
               </div>
               <div className="lr-bigstat-target">
-                {t("target")}: ≤154 {t("mgdl")}
+                {t("target")}: ≤{formatGlucose(154, unit, lang)} {unitLabel}
               </div>
             </div>
             <hr className="lr-sep" />
@@ -76,16 +85,19 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
               <div className="lr-bigstat-label">(GMI) {t("gmi")}</div>
               <div className="lr-bigstat-note">{t("gmiApprox")}</div>
               <div className="lr-bigstat-value" dir="ltr">
-                {stats.gmiPercent === null ? "—" : formatNumber(stats.gmiPercent, lang, 1)}
+                {stats.gmiPercent === null
+                  ? "—"
+                  : unit === "mmol/L"
+                    ? formatNumber(stats.gmiMmolMol!, lang)
+                    : formatNumber(stats.gmiPercent, lang, 1)}
                 <span className="lr-bigstat-unit">
-                  %{" | "}
-                  {stats.gmiMmolMol === null
-                    ? "—"
-                    : `${formatNumber(stats.gmiMmolMol, lang)} ${t("mmolMol")}`}
+                  {unit === "mmol/L" ? t("mmolMol") : "%"}
                 </span>
               </div>
               <div className="lr-bigstat-target">
-                {t("goal")}: {"<"}{formatPct(7, lang, 1)} | {t("goal")}: ≤53 {t("mmolMol")}
+                {unit === "mmol/L"
+                  ? `${t("goal")}: ≤53 ${t("mmolMol")}`
+                  : `${t("goal")}: <${formatPct(7, lang, 1)}`}
               </div>
             </div>
           </div>
@@ -111,6 +123,7 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
               profile={ctx.agp}
               targets={targets}
               lang={lang}
+              unit={unit}
               width={w}
             />
           )}
