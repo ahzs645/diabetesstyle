@@ -25,6 +25,12 @@ import { MonthlySummaryReport } from "../../components/libre-report/report-month
 import { MealtimePatternsReport } from "../../components/libre-report/report-mealtime";
 import { DailyPatternsReport } from "../../components/libre-report/report-daily-patterns";
 import { DeviceDetailsReport } from "../../components/libre-report/report-device";
+import {
+  DateField,
+  formatDisplayDate,
+  Select,
+  toIsoDate,
+} from "../../components/libre-report/controls";
 import "./libre-report.css";
 
 const REPORTS: { id: string; label: LabelKey }[] = [
@@ -49,7 +55,9 @@ export default function LibreReportPage() {
   const [days, setDays] = useState(14);
   const [endDate, setEndDate] = useState<string>("");
   const [selectedReport, setSelectedReport] = useState<string>("all");
+  // ISO yyyy-mm-dd; shown as DD/MM/YYYY on the report header
   const [patientDob, setPatientDob] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
 
   const t = makeT(lang);
 
@@ -57,11 +65,7 @@ export default function LibreReportPage() {
     setData(parsed);
     setError(null);
     const last = parsed.readings.at(-1)?.time;
-    if (last) {
-      const mm = String(last.getMonth() + 1).padStart(2, "0");
-      const dd = String(last.getDate()).padStart(2, "0");
-      setEndDate(`${last.getFullYear()}-${mm}-${dd}`);
-    }
+    if (last) setEndDate(toIsoDate(last));
   }, []);
 
   useEffect(() => {
@@ -97,7 +101,7 @@ export default function LibreReportPage() {
       targets: DEFAULT_TARGETS,
       lang,
       patientName: data.generatedBy,
-      patientDob,
+      patientDob: formatDisplayDate(patientDob),
       generatedAt: formatFullDate(new Date(), lang),
     };
   }, [data, endDate, days, lang, patientDob]);
@@ -108,57 +112,56 @@ export default function LibreReportPage() {
     <div className="lr-root" dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
       <div className="lr-toolbar lr-noprint">
         <div className="lr-toolbar-brand">{t("appTitle")}</div>
-        <label className="lr-tool">
+        <div className="lr-tool">
           <span>{t("reportPeriod")}</span>
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-            {PERIOD_CHOICES.map((d) => (
-              <option key={d} value={d}>
-                {d} {t("days")}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="lr-tool">
+          <Select
+            value={String(days)}
+            options={PERIOD_CHOICES.map((d) => ({
+              value: String(d),
+              label: `${d} ${t("days")}`,
+            }))}
+            onChange={(v) => setDays(Number(v))}
+            ariaLabel={t("reportPeriod")}
+          />
+        </div>
+        <div className="lr-tool">
           <span>{t("endDate")}</span>
-          <input
-            type="date"
+          <DateField
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
+            lang={lang}
+            ariaLabel={t("endDate")}
           />
-        </label>
-        <label className="lr-tool">
-          <span>{t("allReports")}</span>
-          <select value={selectedReport} onChange={(e) => setSelectedReport(e.target.value)}>
-            <option value="all">{t("allReports")}</option>
-            {REPORTS.map((r) => (
-              <option key={r.id} value={r.id}>
-                {t(r.label)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="lr-tool">
+        </div>
+        <div className="lr-tool">
           <span>{t("dob")}</span>
-          <input
-            type="text"
-            dir="ltr"
-            placeholder="DD/MM/YYYY"
+          <DateField
             value={patientDob}
-            onChange={(e) => setPatientDob(e.target.value)}
-            style={{ width: "7.5rem" }}
+            onChange={setPatientDob}
+            lang={lang}
+            ariaLabel={t("dob")}
+            clearable
           />
-        </label>
-        <label className="lr-tool lr-upload">
+        </div>
+        <div className="lr-tool lr-upload">
           <span>{t("uploadCsv")}</span>
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onUpload(f);
-            }}
-          />
-        </label>
+          <label className="lr-field-btn lr-file-btn">
+            <span className="lr-file-name">
+              {fileName || (lang === "ar" ? "اختيار ملف…" : "Choose file…")}
+            </span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  setFileName(f.name);
+                  void onUpload(f);
+                }
+              }}
+            />
+          </label>
+        </div>
         <button type="button" className="lr-btn lr-btn-primary" onClick={() => window.print()}>
           {t("printReport")}
         </button>
@@ -191,7 +194,10 @@ export default function LibreReportPage() {
                 accept=".csv,text/csv"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) void onUpload(f);
+                  if (f) {
+                    setFileName(f.name);
+                    void onUpload(f);
+                  }
                 }}
               />
             </label>
@@ -202,6 +208,22 @@ export default function LibreReportPage() {
             </small>
           </div>
         </main>
+      ) : null}
+
+      {ctx ? (
+        <nav className="lr-tabs lr-noprint" aria-label={t("allReports")}>
+          {[{ id: "all", label: "allReports" as LabelKey }, ...REPORTS].map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={"lr-tab" + (selectedReport === r.id ? " lr-tab-active" : "")}
+              aria-current={selectedReport === r.id ? "true" : undefined}
+              onClick={() => setSelectedReport(r.id)}
+            >
+              {t(r.label)}
+            </button>
+          ))}
+        </nav>
       ) : null}
 
       {ctx ? (
