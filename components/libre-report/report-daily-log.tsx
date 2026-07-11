@@ -1,5 +1,10 @@
 import type { ReactElement } from "react";
-import { formatDayMonth, makeT, weekdayName } from "../../lib/libre-report/i18n";
+import {
+  formatDayMonth,
+  formatGlucose,
+  makeT,
+  weekdayName,
+} from "../../lib/libre-report/i18n";
 import { minutesOfDay } from "../../lib/libre-report/stats";
 import { AutoWidth } from "./auto-width";
 import { DayChart } from "./charts";
@@ -8,7 +13,7 @@ import { ReportPage } from "./report-header";
 
 export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { targets, lang } = ctx;
+  const { targets, lang, unit } = ctx;
   return (
     <ReportPage ctx={ctx} title={t("dailyLog")} id="daily-log">
       {ctx.days.map((day) => {
@@ -45,6 +50,7 @@ export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
                   scans={day.scans}
                   targets={targets}
                   lang={lang}
+                  unit={unit}
                   markers={markers}
                   width={w}
                 />
@@ -56,13 +62,13 @@ export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
                   <tr>
                     <th className="lr-hourly-head">{t("maxLabel")}</th>
                     {day.hourlyMax.map((v, i) => (
-                      <td key={i}>{v === null ? "" : Math.round(v)}</td>
+                      <td key={i}>{v === null ? "" : formatGlucose(v, unit, lang)}</td>
                     ))}
                   </tr>
                   <tr>
                     <th className="lr-hourly-head">{t("minLabel")}</th>
                     {day.hourlyMin.map((v, i) => (
-                      <td key={i}>{v === null ? "" : Math.round(v)}</td>
+                      <td key={i}>{v === null ? "" : formatGlucose(v, unit, lang)}</td>
                     ))}
                   </tr>
                 </tbody>
@@ -78,14 +84,17 @@ export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
 
 export function DailyLogLegend({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
+  const { targets, lang, unit } = ctx;
   return (
     <div className="lr-legend">
       <b>{t("legend")}</b>
       <span>
-        <i className="lr-swatch lr-swatch-high" /> {t("highGlucoseLegend")}
+        <i className="lr-swatch lr-swatch-high" />{" "}
+        {t("highGlucoseLegend", { v: formatGlucose(targets.veryHigh, unit, lang) })}
       </span>
       <span>
-        <i className="lr-swatch lr-swatch-low" /> {t("lowGlucoseLegend")}
+        <i className="lr-swatch lr-swatch-low" />{" "}
+        {t("lowGlucoseLegend", { v: formatGlucose(targets.low, unit, lang) })}
       </span>
       <span>
         <i className="lr-swatch lr-swatch-scan" /> {t("scansViews")}

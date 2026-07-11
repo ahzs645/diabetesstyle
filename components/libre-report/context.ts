@@ -5,7 +5,7 @@ import type {
   PeriodStats,
   ReportPeriod,
 } from "../../lib/libre-report/stats";
-import type { ReportLang } from "../../lib/libre-report/i18n";
+import type { GlucoseUnit, ReportLang } from "../../lib/libre-report/i18n";
 import type { LibreExport } from "../../lib/libre-report/types";
 
 /** Everything a report section needs to render. */
@@ -17,6 +17,8 @@ export interface ReportContext {
   agp: AgpProfile | null;
   targets: GlucoseTargets;
   lang: ReportLang;
+  /** Display unit for glucose values (stored values are always mg/dL). */
+  unit: GlucoseUnit;
   patientName: string;
   patientDob: string;
   generatedAt: string;

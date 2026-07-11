@@ -1,9 +1,11 @@
 import type { ReactElement } from "react";
 import {
   formatDurationOfDay,
+  formatGlucose,
   formatNumber,
   formatPct,
   formatPeriod,
+  glucoseUnitLabel,
   makeT,
   weekdayName,
 } from "../../lib/libre-report/i18n";
@@ -14,8 +16,10 @@ import { ReportPage } from "./report-header";
 
 export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { stats, targets, lang } = ctx;
+  const { stats, targets, lang, unit } = ctx;
   const tir = stats.timeInRanges;
+  const unitLabel = glucoseUnitLabel(unit, lang);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
 
   return (
     <ReportPage ctx={ctx} title={t("agpReport")} id="agp-report">
@@ -53,7 +57,7 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
                   <td>
                     {t("targetRangeLabel")}{" "}
                     <span dir="ltr">
-                      {targets.low}-{targets.high} {t("mgdl")}
+                      {g(targets.low)}-{g(targets.high)} {unitLabel}
                     </span>
                   </td>
                   <td>
@@ -61,38 +65,40 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
                   </td>
                 </tr>
                 <tr>
-                  <td>{t("below70")}</td>
+                  <td>{t("belowThreshold", { v: g(targets.low), u: unitLabel })}</td>
                   <td>
                     {t("lessThan")} {formatPct(4, lang)} ({formatDurationOfDay(4, lang)})
                   </td>
                 </tr>
                 <tr>
-                  <td>{t("below54")}</td>
+                  <td>{t("belowThreshold", { v: g(targets.veryLow), u: unitLabel })}</td>
                   <td>
                     {t("lessThan")} {formatPct(1, lang)} ({formatDurationOfDay(1, lang)})
                   </td>
                 </tr>
                 <tr>
-                  <td>{t("above180")}</td>
+                  <td>{t("aboveThreshold", { v: g(targets.high), u: unitLabel })}</td>
                   <td>
                     {t("lessThan")} {formatPct(25, lang)} ({formatDurationOfDay(25, lang)})
                   </td>
                 </tr>
                 <tr>
-                  <td>{t("above250")}</td>
+                  <td>{t("aboveThreshold", { v: g(targets.veryHigh), u: unitLabel })}</td>
                   <td>
                     {t("lessThan")} {formatPct(5, lang)} ({formatDurationOfDay(5, lang)})
                   </td>
                 </tr>
               </tbody>
             </table>
-            <div className="lr-footnote">{t("tirBenefit")}</div>
+            <div className="lr-footnote">
+              {t("tirBenefit", { lo: g(targets.low), hi: g(targets.high), u: unitLabel })}
+            </div>
             <div className="lr-stat-row lr-stat-strong">
               <span>{t("averageGlucose")}</span>
               <b>
                 {stats.averageGlucose === null
                   ? "—"
-                  : `${formatNumber(stats.averageGlucose, lang)} ${t("mgdl")}`}
+                  : `${g(stats.averageGlucose)} ${unitLabel}`}
               </b>
             </div>
             <div className="lr-stat-row lr-stat-strong">
@@ -100,9 +106,9 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
               <b>
                 {stats.gmiPercent === null
                   ? "—"
-                  : `${formatPct(stats.gmiPercent, lang, 1)} ${
-                      lang === "ar" ? "أو" : "or"
-                    } ${formatNumber(stats.gmiMmolMol!, lang)} ${t("mmolMol")}`}
+                  : unit === "mmol/L"
+                    ? `${formatNumber(stats.gmiMmolMol!, lang)} ${t("mmolMol")}`
+                    : formatPct(stats.gmiPercent, lang, 1)}
               </b>
             </div>
             <div className="lr-stat-row lr-stat-strong">
@@ -125,6 +131,7 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
               ]}
               targets={targets}
               lang={lang}
+              unit={unit}
             />
           ) : (
             <div className="lr-empty">{t("noData")}</div>
@@ -136,7 +143,7 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
       <p className="lr-explainer">{t("agpExplainer")}</p>
       {ctx.agp ? (
         <AutoWidth>
-          {(w) => <AgpChart profile={ctx.agp!} targets={targets} lang={lang} width={w} />}
+          {(w) => <AgpChart profile={ctx.agp!} targets={targets} lang={lang} unit={unit} width={w} />}
         </AutoWidth>
       ) : (
         <div className="lr-empty">{t("noData")}</div>
@@ -151,7 +158,7 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
 
 /** 7-column daily thumbnails aligned to weekdays, like the printed AGP. */
 export function DailyProfilesGrid({ ctx }: { ctx: ReportContext }): ReactElement {
-  const { days, targets, lang } = ctx;
+  const { days, targets, lang, unit } = ctx;
   // Pad the first row so each column matches its weekday (week starts Sunday).
   const lead = days.length ? days[0].day.getDay() : 0;
   const cells: (typeof days[number] | null)[] = [
@@ -179,6 +186,8 @@ export function DailyProfilesGrid({ ctx }: { ctx: ReportContext }): ReactElement
                   historic={day.historic}
                   targets={targets}
                   dayNumber={day.day.getDate()}
+                  lang={lang}
+                  unit={unit}
                   showYLabels={ci === 0 && ri === 0}
                 />
               </div>

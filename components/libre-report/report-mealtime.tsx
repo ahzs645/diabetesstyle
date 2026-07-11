@@ -1,5 +1,10 @@
 import type { ReactElement } from "react";
-import { formatDayMonth, makeT, weekdayName } from "../../lib/libre-report/i18n";
+import {
+  formatDayMonth,
+  formatGlucose,
+  makeT,
+  weekdayName,
+} from "../../lib/libre-report/i18n";
 import { minutesOfDay } from "../../lib/libre-report/stats";
 import type { FoodEntry } from "../../lib/libre-report/types";
 import { MealPeriodChart } from "./charts";
@@ -55,7 +60,7 @@ function mealCurve(
 
 export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { lang } = ctx;
+  const { lang, unit } = ctx;
   const mealsInPeriod = ctx.data.food.filter(
     (f) => f.time >= ctx.period.start && f.time < ctx.period.end,
   );
@@ -76,6 +81,7 @@ export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactEl
             </div>
             <MealPeriodChart
               lang={lang}
+              unit={unit}
               showSideLabels={i === 0 ? "pre" : i === MEAL_PERIODS.length - 1 ? "post" : undefined}
               mealCurves={mealCurve(
                 ctx,
@@ -116,16 +122,18 @@ export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactEl
       <div className="lr-legend">
         <b>{t("legend")}</b>
         <span>
-          <i className="lr-swatch lr-swatch-high" /> {t("highGlucoseLegend")}
+          <i className="lr-swatch lr-swatch-high" />{" "}
+          {t("highGlucoseLegend", { v: formatGlucose(ctx.targets.veryHigh, unit, lang) })}
         </span>
         <span>
-          <i className="lr-swatch lr-swatch-low" /> {t("lowGlucoseLegend")}
+          <i className="lr-swatch lr-swatch-low" />{" "}
+          {t("lowGlucoseLegend", { v: formatGlucose(ctx.targets.low, unit, lang) })}
         </span>
         <span>◻ {t("prePostAverages")}</span>
         <span>
           <i className="lr-swatch lr-swatch-scan" /> {t("glucoseReading")}
         </span>
-        <span>▲ {t("glucoseAbove350")}</span>
+        <span>▲ {t("glucoseAbove350", { v: formatGlucose(350, unit, lang) })}</span>
         <span>✎ {t("rapidActingInsulin")}</span>
       </div>
     </ReportPage>
@@ -175,8 +183,12 @@ function MealGridCells({
   }
   return (
     <>
-      <td className="lr-meal-cell">{pre === null ? "" : Math.round(pre)}</td>
-      <td className="lr-meal-cell">{post === null ? "" : Math.round(post)}</td>
+      <td className="lr-meal-cell">
+        {pre === null ? "" : formatGlucose(pre, ctx.unit, ctx.lang)}
+      </td>
+      <td className="lr-meal-cell">
+        {post === null ? "" : formatGlucose(post, ctx.unit, ctx.lang)}
+      </td>
       <td className="lr-meal-cell" />
       <td className="lr-meal-cell lr-meal-cell-carb">
         {meal?.grams != null ? Math.round(meal.grams) : ""}

@@ -27,7 +27,9 @@ const dict = {
   device: { ar: "الجهاز", en: "DEVICE" },
   sources: { ar: "مصادر", en: "SOURCES" },
   mgdl: { ar: "ملجم/ديسيلتر", en: "mg/dL" },
+  mmolL: { ar: "ملمول/لتر", en: "mmol/L" },
   mmolMol: { ar: "ملمول/مول", en: "mmol/mol" },
+  unit: { ar: "الوحدة", en: "Unit" },
   gramsPerDay: { ar: "جرام/يوم", en: "grams/day" },
   unitsPerDay: { ar: "وحدة/يوم", en: "units/day" },
   perDay: { ar: "اليوم", en: "Day" },
@@ -55,15 +57,14 @@ const dict = {
     en: "Targets % of Readings (Time/Day)",
   },
   targetRangeLabel: { ar: "النطاق المستهدف", en: "Target Range" },
-  below70: { ar: "أقل من 70 ملجم/ديسيلتر", en: "Below 70 mg/dL" },
-  below54: { ar: "أقل من 54 ملجم/ديسيلتر", en: "Below 54 mg/dL" },
-  above180: { ar: "أعلى 180 ملجم/ديسيلتر", en: "Above 180 mg/dL" },
-  above250: { ar: "أعلى 250 ملجم/ديسيلتر", en: "Above 250 mg/dL" },
+  // {v} = threshold value, {u} = glucose unit label
+  belowThreshold: { ar: "أقل من {v} {u}", en: "Below {v} {u}" },
+  aboveThreshold: { ar: "أعلى {v} {u}", en: "Above {v} {u}" },
   greaterThan: { ar: "أكبر من", en: "Greater than" },
   lessThan: { ar: "أقل من", en: "Less than" },
   tirBenefit: {
-    ar: "كل زيادة في الوقت بمقدار %5 في حدود (70-180 ملجم/ديسيلتر) تكون مفيدة طبيًا.",
-    en: "Each 5% increase in time in range (70-180 mg/dL) is clinically beneficial.",
+    ar: "كل زيادة في الوقت بمقدار %5 في حدود ({lo}-{hi} {u}) تكون مفيدة طبيًا.",
+    en: "Each 5% increase in time in range ({lo}-{hi} {u}) is clinically beneficial.",
   },
   averageGlucose: { ar: "متوسط الجلوكوز", en: "Average Glucose" },
   gmi: { ar: "مؤشر إدارة الجلوكوز (GMI)", en: "Glucose Management Indicator (GMI)" },
@@ -146,8 +147,8 @@ const dict = {
   maxLabel: { ar: "الحد الأقصى", en: "Max" },
   minLabel: { ar: "الحد الأدنى", en: "Min" },
   legend: { ar: "السرد", en: "Legend" },
-  highGlucoseLegend: { ar: "جلوكوز مرتفع (<250)", en: "High Glucose (>250)" },
-  lowGlucoseLegend: { ar: "جلوكوز منخفض (>70)", en: "Low Glucose (<70)" },
+  highGlucoseLegend: { ar: "جلوكوز مرتفع (<{v})", en: "High Glucose (>{v})" },
+  lowGlucoseLegend: { ar: "جلوكوز منخفض (>{v})", en: "Low Glucose (<{v})" },
   scansViews: { ar: "الفحوصات/ العروض", en: "Scans/Views" },
   logged: { ar: "مسجل", en: "Logged" },
   postMealPeak: { ar: "ذروة بعد الوجبة", en: "Post-Meal Peak" },
@@ -174,7 +175,7 @@ const dict = {
   daily: { ar: "اليومي", en: "AVERAGE" },
   prePostAverages: { ar: "المتوسط قبل الوجبة وبعد", en: "Pre & Post-meal Averages" },
   glucoseReading: { ar: "قراءة نسبة الجلوكوز", en: "Glucose Reading" },
-  glucoseAbove350: { ar: "نسبة الجلوكوز أعلى من 350", en: "Glucose Above 350" },
+  glucoseAbove350: { ar: "نسبة الجلوكوز أعلى من {v}", en: "Glucose Above {v}" },
   // daily patterns
   dailyAverage: { ar: "المتوسط اليومي", en: "Daily Average" },
   gramsUnit: { ar: "جرام", en: "grams" },
@@ -245,6 +246,40 @@ export function formatPct(
 ): string {
   const n = formatNumber(value, lang, fractionDigits);
   return lang === "ar" ? `%${n}` : `${n}%`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Glucose units                                                       */
+/* ------------------------------------------------------------------ */
+
+/** Display unit for glucose values. Stored values are always mg/dL. */
+export type GlucoseUnit = "mg/dL" | "mmol/L";
+
+/** mg/dL per 1 mmol/L (matches the conversion used when parsing). */
+export const MGDL_PER_MMOL = 18.016;
+
+/** Convert a stored mg/dL value into the numeric value of `unit`. */
+export function toGlucoseUnit(mgdl: number, unit: GlucoseUnit): number {
+  return unit === "mmol/L" ? mgdl / MGDL_PER_MMOL : mgdl;
+}
+
+/**
+ * Format a stored mg/dL glucose value in the chosen display unit:
+ * mg/dL as a whole number, mmol/L to one decimal (localized separator).
+ */
+export function formatGlucose(
+  mgdl: number,
+  unit: GlucoseUnit,
+  lang: ReportLang,
+): string {
+  return unit === "mmol/L"
+    ? formatNumber(mgdl / MGDL_PER_MMOL, lang, 1)
+    : formatNumber(mgdl, lang, 0);
+}
+
+/** The label for a glucose unit ("mg/dL" / "ملجم/ديسيلتر" or "mmol/L" / "ملمول/لتر"). */
+export function glucoseUnitLabel(unit: GlucoseUnit, lang: ReportLang): string {
+  return dict[unit === "mmol/L" ? "mmolL" : "mgdl"][lang];
 }
 
 /** "(24س)" / "(16س 48د)" style duration from a % of a day. */

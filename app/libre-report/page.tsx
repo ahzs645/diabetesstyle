@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   formatFullDate,
+  glucoseUnitLabel,
   makeT,
+  type GlucoseUnit,
   type LabelKey,
   type ReportLang,
 } from "../../lib/libre-report/i18n";
@@ -49,6 +51,7 @@ const PERIOD_CHOICES = [7, 14, 30, 90];
 
 export default function LibreReportPage() {
   const [lang, setLang] = useState<ReportLang>("ar");
+  const [unit, setUnit] = useState<GlucoseUnit>("mg/dL");
   const [data, setData] = useState<LibreExport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -168,11 +171,12 @@ export default function LibreReportPage() {
       agp: computeAgpProfile(historic),
       targets: DEFAULT_TARGETS,
       lang,
+      unit,
       patientName: data.generatedBy,
       patientDob: formatDisplayDate(patientDob),
       generatedAt: formatFullDate(new Date(), lang),
     };
-  }, [data, endDate, days, lang, patientDob]);
+  }, [data, endDate, days, lang, unit, patientDob]);
 
   const show = (id: string) => selectedReport === "all" || selectedReport === id;
 
@@ -190,6 +194,18 @@ export default function LibreReportPage() {
             }))}
             onChange={(v) => setDays(Number(v))}
             ariaLabel={t("reportPeriod")}
+          />
+        </div>
+        <div className="lr-tool">
+          <span>{t("unit")}</span>
+          <Select
+            value={unit}
+            options={(["mg/dL", "mmol/L"] as GlucoseUnit[]).map((u) => ({
+              value: u,
+              label: glucoseUnitLabel(u, lang),
+            }))}
+            onChange={(v) => setUnit(v as GlucoseUnit)}
+            ariaLabel={t("unit")}
           />
         </div>
         <div className="lr-tool">

@@ -1,5 +1,12 @@
 import type { ReactElement } from "react";
-import { formatDayMonth, formatNumber, makeT, weekdayName } from "../../lib/libre-report/i18n";
+import {
+  formatDayMonth,
+  formatGlucose,
+  formatNumber,
+  glucoseUnitLabel,
+  makeT,
+  weekdayName,
+} from "../../lib/libre-report/i18n";
 import { AutoWidth } from "./auto-width";
 import { DayChart } from "./charts";
 import type { ReportContext } from "./context";
@@ -7,7 +14,7 @@ import { ReportPage } from "./report-header";
 
 export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
-  const { targets, lang } = ctx;
+  const { targets, lang, unit } = ctx;
   return (
     <ReportPage ctx={ctx} title={t("weeklySummary")} id="weekly-summary">
       <div className="lr-weekly-headings">
@@ -30,6 +37,7 @@ export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactEleme
                   scans={day.scans}
                   targets={targets}
                   lang={lang}
+                  unit={unit}
                   height={96}
                   width={w}
                 />
@@ -40,9 +48,9 @@ export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactEleme
             <div className="lr-weekly-cell">
               <span className="lr-weekly-icon">📱</span>
               <b dir="ltr">
-                {day.averageGlucose === null ? "—" : formatNumber(day.averageGlucose, lang)}
+                {day.averageGlucose === null ? "—" : formatGlucose(day.averageGlucose, unit, lang)}
               </b>
-              <span className="lr-weekly-unit">{t("mgdl")}</span>
+              <span className="lr-weekly-unit">{glucoseUnitLabel(unit, lang)}</span>
             </div>
             <div className="lr-weekly-cell">
               {day.carbsGrams === null ? (

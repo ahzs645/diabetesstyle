@@ -2,8 +2,15 @@ import type { CSSProperties, ReactElement } from "react";
 import type { AgpProfile, GlucoseTargets, LowGlucoseEvent } from "../../lib/libre-report/stats";
 import { minutesOfDay } from "../../lib/libre-report/stats";
 import type { GlucoseReading } from "../../lib/libre-report/types";
-import type { ReportLang } from "../../lib/libre-report/i18n";
-import { formatDurationOfDay, formatNumber, formatPct, makeT } from "../../lib/libre-report/i18n";
+import type { GlucoseUnit, ReportLang } from "../../lib/libre-report/i18n";
+import {
+  formatDurationOfDay,
+  formatGlucose,
+  formatNumber,
+  formatPct,
+  glucoseUnitLabel,
+  makeT,
+} from "../../lib/libre-report/i18n";
 import {
   bandPath,
   dayCurvePath,
@@ -66,12 +73,14 @@ export function TimeInRangesBar({
   tir,
   targets,
   lang,
+  unit,
   height = 260,
   goals,
 }: {
   tir: TirSegment[];
   targets: GlucoseTargets;
   lang: ReportLang;
+  unit: GlucoseUnit;
   height?: number;
   /** Optional goal strings per group (insights variant). */
   goals?: { high?: string; target?: string; low?: string };
@@ -84,7 +93,8 @@ export function TimeInRangesBar({
     offsets.push(acc);
     acc += h;
   }
-  const unit = t("mgdl");
+  const unitLabel = glucoseUnitLabel(unit, lang);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
   const rows: {
     key: TirSegment["key"];
     title: string;
@@ -94,31 +104,31 @@ export function TimeInRangesBar({
     {
       key: "veryHigh",
       title: t("veryHigh"),
-      range: `>${targets.veryHigh} ${unit}`,
+      range: `>${g(targets.veryHigh)} ${unitLabel}`,
       pct: tir[0].pct,
     },
     {
       key: "high",
       title: t("high"),
-      range: `${targets.high + 1} - ${targets.veryHigh} ${unit}`,
+      range: `${g(targets.high + 1)} - ${g(targets.veryHigh)} ${unitLabel}`,
       pct: tir[1].pct,
     },
     {
       key: "target",
       title: t("targetRange"),
-      range: `${targets.low} - ${targets.high} ${unit}`,
+      range: `${g(targets.low)} - ${g(targets.high)} ${unitLabel}`,
       pct: tir[2].pct,
     },
     {
       key: "low",
       title: t("low"),
-      range: `${targets.veryLow} - ${targets.low - 1} ${unit}`,
+      range: `${g(targets.veryLow)} - ${g(targets.low - 1)} ${unitLabel}`,
       pct: tir[3].pct,
     },
     {
       key: "veryLow",
       title: t("veryLow"),
-      range: `<${targets.veryLow} ${unit}`,
+      range: `<${g(targets.veryLow)} ${unitLabel}`,
       pct: tir[4].pct,
     },
   ];
@@ -185,7 +195,7 @@ export function TimeInRangesBar({
               textAnchor="end"
               direction="ltr"
             >
-              {th.value}
+              {g(th.value)}
             </text>
           </g>
         ))}
@@ -232,6 +242,7 @@ export function AgpChart({
   profile,
   targets,
   lang,
+  unit,
   width = 700,
   height = 240,
   yMax = 350,
@@ -242,6 +253,7 @@ export function AgpChart({
   profile: AgpProfile;
   targets: GlucoseTargets;
   lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
   yMax?: number;
@@ -250,6 +262,7 @@ export function AgpChart({
   showTargetBracket?: boolean;
 }): ReactElement {
   const t = makeT(lang);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
   const margin = { left: 34, right: showPercentileLabels ? 40 : 8, top: 8, bottom: 16 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
@@ -298,11 +311,11 @@ export function AgpChart({
             fill="transparent"
           >
             <title>
-              {`${hourLabel(Math.floor(profile.binMinutes[i] / 60))} — ${t("median")} ${Math.round(profile.p50[i])} (${Math.round(profile.p5[i])}–${Math.round(profile.p95[i])} ${t("mgdl")})`}
+              {`${hourLabel(Math.floor(profile.binMinutes[i] / 60))} — ${t("median")} ${g(profile.p50[i])} (${g(profile.p5[i])}–${g(profile.p95[i])} ${glucoseUnitLabel(unit, lang)})`}
             </title>
           </rect>
         ))}
-        <GlucoseTicks ticks={yTicks} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} />
+        <GlucoseTicks ticks={yTicks} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} format={g} />
         {showTargetBracket ? (
           <g>
             <path
@@ -343,7 +356,7 @@ export function AgpChart({
         fill={LR_COLORS.axisText}
         textAnchor="end"
       >
-        {t("mgdl")}
+        {glucoseUnitLabel(unit, lang)}
       </text>
     </svg>
   );
@@ -358,6 +371,7 @@ export function DayChart({
   scans,
   targets,
   lang,
+  unit,
   width = 700,
   height = 110,
   yMax = 350,
@@ -368,6 +382,7 @@ export function DayChart({
   scans: GlucoseReading[];
   targets: GlucoseTargets;
   lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
   yMax?: number;
@@ -379,6 +394,7 @@ export function DayChart({
   const h = height - margin.top - margin.bottom;
   const labelStep = width < 460 ? 4 : 2;
   const t = makeT(lang);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="lr-daychart" role="img">
       <g transform={`translate(${margin.left},${margin.top})`}>
@@ -407,7 +423,7 @@ export function DayChart({
                   cx={xForMinutes(minutesOfDay(r.time), w)}
                   cy={yForGlucose(r.mgdl, yMax, h)}
                 />
-                <title>{`${hourLabel(r.time.getHours())} ${Math.round(r.mgdl)} ${t("mgdl")}`}</title>
+                <title>{`${hourLabel(r.time.getHours())} ${g(r.mgdl)} ${glucoseUnitLabel(unit, lang)}`}</title>
               </g>
             ))
           : null}
@@ -423,7 +439,7 @@ export function DayChart({
             <title>{m.label}</title>
           </text>
         ))}
-        <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} />
+        <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} format={g} />
         {/* hour labels every 2h at the top, like the printed daily log */}
         {Array.from({ length: 24 / labelStep + 1 }, (_, i) => i * labelStep).map((hh) => (
           <text
@@ -451,6 +467,8 @@ export function DailyProfileThumb({
   historic,
   targets,
   dayNumber,
+  lang,
+  unit,
   width = 96,
   height = 64,
   yMax = 350,
@@ -459,6 +477,8 @@ export function DailyProfileThumb({
   historic: GlucoseReading[];
   targets: GlucoseTargets;
   dayNumber: number;
+  lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
   yMax?: number;
@@ -523,10 +543,10 @@ export function DailyProfileThumb({
       {showYLabels ? (
         <g>
           <text x={2} y={yHigh - 1.5} fontSize={5.5} fill={LR_COLORS.axisText} direction="ltr">
-            {targets.high}
+            {formatGlucose(targets.high, unit, lang)}
           </text>
           <text x={2} y={yLow + 6} fontSize={5.5} fill={LR_COLORS.axisText} direction="ltr">
-            {targets.low}
+            {formatGlucose(targets.low, unit, lang)}
           </text>
         </g>
       ) : null}
@@ -542,12 +562,14 @@ export function MedianChart({
   profile,
   targets,
   lang,
+  unit,
   width = 340,
   height = 170,
 }: {
   profile: AgpProfile;
   targets: GlucoseTargets;
   lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
 }): ReactElement {
@@ -569,7 +591,7 @@ export function MedianChart({
         <path d={bandPath(xs, profile.p95.map(y), profile.p5.map(y))} fill={LR_COLORS.band595} />
         <TargetLines width={w} height={h} yMax={yMax} low={targets.low} high={targets.high} color="#8a8a8a" />
         <path d={linePath(xs, profile.p50.map(y))} fill="none" stroke={LR_COLORS.median} strokeWidth={2} />
-        <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} />
+        <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} format={(v) => formatGlucose(v, unit, lang)} />
       </g>
     </svg>
   );
@@ -578,12 +600,14 @@ export function MedianChart({
 export function LowEventsChart({
   events,
   lang,
+  unit,
   width = 340,
   height = 170,
   threshold = 70,
 }: {
   events: LowGlucoseEvent[];
   lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
   threshold?: number;
@@ -606,7 +630,7 @@ export function LowEventsChart({
         {[40, 50, 60, 70, 80, 90, 100].map((tick) => (
           <g key={tick}>
             <text x={-4} y={y(tick) + 2.5} fontSize={7} fill={tick === threshold ? LR_COLORS.low : LR_COLORS.axisText} textAnchor="end" direction="ltr">
-              {tick}
+              {formatGlucose(tick, unit, lang)}
             </text>
           </g>
         ))}
@@ -619,7 +643,7 @@ export function LowEventsChart({
             r={3}
             fill={LR_COLORS.low}
           >
-            <title>{`${hourLabel(e.start.getHours())} — ${Math.round(e.nadir)} (${Math.round(e.durationMin)} ${t("minutes")})`}</title>
+            <title>{`${hourLabel(e.start.getHours())} — ${formatGlucose(e.nadir, unit, lang)} (${Math.round(e.durationMin)} ${t("minutes")})`}</title>
           </circle>
         ))}
       </g>
@@ -679,6 +703,7 @@ export function PatternsScatterChart({
   profile,
   targets,
   lang,
+  unit,
   width = 700,
   height = 260,
 }: {
@@ -686,6 +711,7 @@ export function PatternsScatterChart({
   profile: AgpProfile | null;
   targets: GlucoseTargets;
   lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
 }): ReactElement {
@@ -695,6 +721,7 @@ export function PatternsScatterChart({
   const h = height - margin.top - margin.bottom;
   const yMax = 350;
   const y = (v: number) => yForGlucose(v, yMax, h);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
   const colorFor = (v: number) =>
     v < targets.low
       ? LR_COLORS.low
@@ -728,11 +755,11 @@ export function PatternsScatterChart({
         {/* target boundary chips */}
         <rect x={-26} y={y(targets.high) - 5} width={24} height={10} rx={2} fill={LR_COLORS.target} />
         <text x={-14} y={y(targets.high) + 3} fontSize={7} fill="#ffffff" textAnchor="middle" direction="ltr">
-          {targets.high}
+          {g(targets.high)}
         </text>
         <rect x={-26} y={y(targets.low) - 5} width={24} height={10} rx={2} fill={LR_COLORS.target} />
         <text x={-14} y={y(targets.low) + 3} fontSize={7} fill="#ffffff" textAnchor="middle" direction="ltr">
-          {targets.low}
+          {g(targets.low)}
         </text>
         <line x1={0} y1={y(targets.high)} x2={w} y2={y(targets.high)} stroke={LR_COLORS.target} strokeWidth={1.2} />
         <line x1={0} y1={y(targets.low)} x2={w} y2={y(targets.low)} stroke={LR_COLORS.target} strokeWidth={1.2} />
@@ -785,7 +812,7 @@ export function PatternsScatterChart({
             </text>
           ))}
         </g>
-        <GlucoseTicks ticks={[0, 54, 250, 350]} yMax={yMax} height={h} x={-30} />
+        <GlucoseTicks ticks={[0, 54, 250, 350]} yMax={yMax} height={h} x={-30} format={g} />
       </g>
     </svg>
   );
@@ -798,12 +825,14 @@ export function PatternsScatterChart({
 
 export function MealPeriodChart({
   lang,
+  unit,
   width = 170,
   height = 150,
   showSideLabels,
   mealCurves,
 }: {
   lang: ReportLang;
+  unit: GlucoseUnit;
   width?: number;
   height?: number;
   /** show 130/70 on the left (first panel) or 180/100 on the right (last). */
@@ -817,6 +846,7 @@ export function MealPeriodChart({
   const h = height - margin.top - margin.bottom;
   const yMax = 350;
   const y = (v: number) => yForGlucose(v, yMax, h);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
   // x spans -1h .. +3h around the meal
   const x = (rel: number) => ((rel + 60) / (4 * 60)) * w;
   return (
@@ -841,19 +871,19 @@ export function MealPeriodChart({
         ) : null}
         {[0, 50, 150, 250, 350].map((tick) => (
           <text key={tick} x={-3} y={y(tick) + 2.5} fontSize={6.5} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
-            {tick}
+            {g(tick)}
           </text>
         ))}
         {showSideLabels === "pre" ? (
           <g>
-            <text x={-3} y={y(130) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">130</text>
-            <text x={-3} y={y(70) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">70</text>
+            <text x={-3} y={y(130) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">{g(130)}</text>
+            <text x={-3} y={y(70) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">{g(70)}</text>
           </g>
         ) : null}
         {showSideLabels === "post" ? (
           <g>
-            <text x={w + 3} y={y(180) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">180</text>
-            <text x={w + 3} y={y(100) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">100</text>
+            <text x={w + 3} y={y(180) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(180)}</text>
+            <text x={w + 3} y={y(100) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(100)}</text>
           </g>
         ) : null}
         <text x={x(0)} y={h + 10} fontSize={8} textAnchor="middle">🍎</text>
