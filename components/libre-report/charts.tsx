@@ -229,6 +229,7 @@ export function AgpChart({
   const margin = { left: 34, right: showPercentileLabels ? 40 : 8, top: 8, bottom: 16 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
+  const gridStep = width < 460 ? 6 : 3;
   const xs = profile.binMinutes.map((m) => xForMinutes(m, w));
   const y = (v: number) => yForGlucose(v, yMax, h);
   const last = profile.binMinutes.length - 1;
@@ -250,7 +251,7 @@ export function AgpChart({
     >
       <g transform={`translate(${margin.left},${margin.top})`}>
         <rect x={0} y={0} width={w} height={h} fill="#fdfdfd" stroke={LR_COLORS.gridLine} strokeWidth={0.7} />
-        <TimeGrid width={w} height={h} stepHours={3} />
+        <TimeGrid width={w} height={h} stepHours={gridStep} />
         {/* midday emphasis line */}
         <line x1={w / 2} y1={0} x2={w / 2} y2={h} stroke="#9a9a9a" strokeWidth={0.9} />
         <path d={bandPath(xs, profile.p95.map(y), profile.p5.map(y))} fill={LR_COLORS.band595} />
@@ -352,6 +353,7 @@ export function DayChart({
   const margin = { left: 30, right: 6, top: 10, bottom: 14 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
+  const labelStep = width < 460 ? 4 : 2;
   const t = makeT(lang);
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="lr-daychart" role="img">
@@ -399,7 +401,7 @@ export function DayChart({
         ))}
         <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} />
         {/* hour labels every 2h at the top, like the printed daily log */}
-        {Array.from({ length: 13 }, (_, i) => i * 2).map((hh) => (
+        {Array.from({ length: 24 / labelStep + 1 }, (_, i) => i * labelStep).map((hh) => (
           <text
             key={hh}
             x={xForMinutes(hh * 60, w)}
@@ -744,7 +746,7 @@ export function PatternsScatterChart({
               </text>
             </g>
           ))}
-          {[0, 3, 6, 9, 12, 15, 18, 21, 24].map((hh) => (
+          {(width < 460 ? [0, 6, 12, 18, 24] : [0, 3, 6, 9, 12, 15, 18, 21, 24]).map((hh) => (
             <text
               key={hh}
               x={xForMinutes(hh * 60, w)}

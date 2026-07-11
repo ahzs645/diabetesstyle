@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { formatDayMonth, formatNumber, makeT, weekdayName } from "../../lib/libre-report/i18n";
+import { AutoWidth } from "./auto-width";
 import { DayChart } from "./charts";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
@@ -22,13 +23,18 @@ export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactEleme
             <div className="lr-weekly-day-date">{formatDayMonth(day.day, lang)}</div>
           </div>
           <div className="lr-weekly-chart">
-            <DayChart
-              historic={day.historic}
-              scans={day.scans}
-              targets={targets}
-              lang={lang}
-              height={96}
-            />
+            <AutoWidth min={200}>
+              {(w) => (
+                <DayChart
+                  historic={day.historic}
+                  scans={day.scans}
+                  targets={targets}
+                  lang={lang}
+                  height={96}
+                  width={w}
+                />
+              )}
+            </AutoWidth>
           </div>
           <div className="lr-weekly-cells">
             <div className="lr-weekly-cell">

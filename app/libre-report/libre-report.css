@@ -330,6 +330,14 @@
   height: auto;
   display: block;
 }
+.lr-autowidth {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.lr-hscroll {
+  overflow-x: auto;
+}
 .lr-snapchart {
   width: 100%;
   max-width: 380px;
@@ -816,6 +824,13 @@
   gap: 2px;
   align-items: stretch;
   margin-bottom: 8px;
+  overflow-x: auto;
+}
+.lr-dp-headerrow .lr-dp-avgcell {
+  min-width: 74px;
+}
+.lr-dp-headerrow .lr-dp-blockcell {
+  min-width: 26px;
 }
 .lr-dp-avgcell {
   flex: none;
@@ -922,6 +937,10 @@
     max-width: none;
     padding: 0;
   }
+  .lr-hscroll,
+  .lr-dp-headerrow {
+    overflow: visible;
+  }
   .lr-page {
     border: none;
     box-shadow: none;
@@ -936,10 +955,51 @@
 }
 
 @media (max-width: 760px) {
+  .lr-root {
+    padding: 8px 8px 40px;
+  }
+  .lr-page {
+    padding: 12px 12px 16px;
+  }
+
+  /* toolbar: two-per-row controls instead of a cramped single line */
+  .lr-toolbar-brand {
+    flex-basis: 100%;
+    margin-inline-end: 0;
+  }
+  .lr-tool {
+    flex: 1 1 42%;
+    min-width: 0;
+  }
+  .lr-tool select,
+  .lr-tool input {
+    width: 100%;
+    min-width: 0;
+  }
+  .lr-upload input {
+    max-width: none;
+  }
+  .lr-btn {
+    flex: 1 1 auto;
+  }
+
+  /* page header: patient block drops below the title instead of squeezing it */
+  .lr-page-header {
+    flex-wrap: wrap;
+  }
+  .lr-page-header-trail {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
   .lr-columns,
   .lr-snapshot-grid,
+  .lr-snapshot-row,
   .lr-monthly-wrap {
     flex-direction: column;
+  }
+  .lr-snapshot-row .lr-snapchart {
+    max-width: none;
   }
   .lr-meal-panels {
     grid-template-columns: repeat(2, 1fr);
@@ -947,5 +1007,71 @@
   .lr-snapshot-side {
     border-inline-start: none;
     padding-inline-start: 0;
+  }
+  .lr-insights-topline {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* time-in-ranges: labels flow as a plain list beside the bar; pinning
+     them to segment positions overlaps once the text wraps on narrow
+     screens. height:auto must beat the inline height set for the bar. */
+  .lr-tir {
+    height: auto !important;
+  }
+  .lr-tir-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .lr-tir-label {
+    position: static;
+    transform: none;
+  }
+  .lr-tir-range {
+    display: block;
+  }
+
+  /* weekly summary: day + cells on top, chart takes its own full-width row */
+  .lr-weekly-headings {
+    display: none;
+  }
+  .lr-weekly-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .lr-weekly-day {
+    width: auto;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .lr-weekly-chart {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .lr-weekly-cells {
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .lr-weekly-cell {
+    width: auto;
+    min-width: 52px;
+    flex: 0 1 auto;
+  }
+
+  /* daily log: hourly min/max table scrolls sideways instead of crushing */
+  .lr-hscroll .lr-hourly-table {
+    min-width: 560px;
+  }
+
+  /* daily patterns: stack the row label above its chart */
+  .lr-dp-chart {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lr-dp-rowlabel {
+    width: auto;
+    padding-top: 0;
   }
 }

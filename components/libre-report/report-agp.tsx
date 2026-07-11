@@ -7,6 +7,7 @@ import {
   makeT,
   weekdayName,
 } from "../../lib/libre-report/i18n";
+import { AutoWidth } from "./auto-width";
 import { AgpChart, DailyProfileThumb, TimeInRangesBar } from "./charts";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
@@ -134,7 +135,9 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
       <h3 className="lr-band-title">{t("agpSectionTitle")}</h3>
       <p className="lr-explainer">{t("agpExplainer")}</p>
       {ctx.agp ? (
-        <AgpChart profile={ctx.agp} targets={targets} lang={lang} />
+        <AutoWidth>
+          {(w) => <AgpChart profile={ctx.agp!} targets={targets} lang={lang} width={w} />}
+        </AutoWidth>
       ) : (
         <div className="lr-empty">{t("noData")}</div>
       )}
