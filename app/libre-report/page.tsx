@@ -25,6 +25,12 @@ import { MonthlySummaryReport } from "../../components/libre-report/report-month
 import { MealtimePatternsReport } from "../../components/libre-report/report-mealtime";
 import { DailyPatternsReport } from "../../components/libre-report/report-daily-patterns";
 import { DeviceDetailsReport } from "../../components/libre-report/report-device";
+import {
+  DateField,
+  formatDisplayDate,
+  Select,
+  toIsoDate,
+} from "../../components/libre-report/controls";
 import "./libre-report.css";
 
 const REPORTS: { id: string; label: LabelKey }[] = [
@@ -49,7 +55,11 @@ export default function LibreReportPage() {
   const [days, setDays] = useState(14);
   const [endDate, setEndDate] = useState<string>("");
   const [selectedReport, setSelectedReport] = useState<string>("all");
+  // ISO yyyy-mm-dd; shown as DD/MM/YYYY on the report header
   const [patientDob, setPatientDob] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
+  const [csvUrl, setCsvUrl] = useState<string>("");
+  const [dragOver, setDragOver] = useState(false);
 
   const t = makeT(lang);
 
@@ -57,11 +67,7 @@ export default function LibreReportPage() {
     setData(parsed);
     setError(null);
     const last = parsed.readings.at(-1)?.time;
-    if (last) {
-      const mm = String(last.getMonth() + 1).padStart(2, "0");
-      const dd = String(last.getDate()).padStart(2, "0");
-      setEndDate(`${last.getFullYear()}-${mm}-${dd}`);
-    }
+    if (last) setEndDate(toIsoDate(last));
   }, []);
 
   useEffect(() => {
@@ -72,6 +78,7 @@ export default function LibreReportPage() {
     async (file: File) => {
       setLoading(true);
       try {
+        setFileName(file.name);
         applyData(parseLibreExport(await file.text()));
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -81,6 +88,71 @@ export default function LibreReportPage() {
     },
     [applyData],
   );
+
+  const loadFromUrl = useCallback(
+    async (url: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        applyData(parseLibreExport(await res.text()));
+        const name = url.split("/").pop()?.split("?")[0];
+        setFileName(name ? decodeURIComponent(name) : url);
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        setError(`${makeT(lang)("fetchCsvError")}: ${detail}`);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyData, lang],
+  );
+
+  // ?csv=<url> in the page address loads that export on startup
+  useEffect(() => {
+    const src = new URLSearchParams(window.location.search).get("csv");
+    if (src) void loadFromUrl(src);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
+
+  // drag & drop a CSV anywhere on the page
+  useEffect(() => {
+    const hasFiles = (e: DragEvent) =>
+      e.dataTransfer?.types.includes("Files") ?? false;
+    let depth = 0;
+    const onEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth++;
+      setDragOver(true);
+    };
+    const onOver = (e: DragEvent) => {
+      if (hasFiles(e)) e.preventDefault();
+    };
+    const onLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setDragOver(false);
+    };
+    const onDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth = 0;
+      setDragOver(false);
+      const f = e.dataTransfer?.files?.[0];
+      if (f) void onUpload(f);
+    };
+    document.addEventListener("dragenter", onEnter);
+    document.addEventListener("dragover", onOver);
+    document.addEventListener("dragleave", onLeave);
+    document.addEventListener("drop", onDrop);
+    return () => {
+      document.removeEventListener("dragenter", onEnter);
+      document.removeEventListener("dragover", onOver);
+      document.removeEventListener("dragleave", onLeave);
+      document.removeEventListener("drop", onDrop);
+    };
+  }, [onUpload]);
 
   const ctx: ReportContext | null = useMemo(() => {
     if (!data || !endDate) return null;
@@ -97,7 +169,7 @@ export default function LibreReportPage() {
       targets: DEFAULT_TARGETS,
       lang,
       patientName: data.generatedBy,
-      patientDob,
+      patientDob: formatDisplayDate(patientDob),
       generatedAt: formatFullDate(new Date(), lang),
     };
   }, [data, endDate, days, lang, patientDob]);
@@ -108,57 +180,53 @@ export default function LibreReportPage() {
     <div className="lr-root" dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
       <div className="lr-toolbar lr-noprint">
         <div className="lr-toolbar-brand">{t("appTitle")}</div>
-        <label className="lr-tool">
+        <div className="lr-tool">
           <span>{t("reportPeriod")}</span>
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-            {PERIOD_CHOICES.map((d) => (
-              <option key={d} value={d}>
-                {d} {t("days")}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="lr-tool">
+          <Select
+            value={String(days)}
+            options={PERIOD_CHOICES.map((d) => ({
+              value: String(d),
+              label: `${d} ${t("days")}`,
+            }))}
+            onChange={(v) => setDays(Number(v))}
+            ariaLabel={t("reportPeriod")}
+          />
+        </div>
+        <div className="lr-tool">
           <span>{t("endDate")}</span>
-          <input
-            type="date"
+          <DateField
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
+            lang={lang}
+            ariaLabel={t("endDate")}
           />
-        </label>
-        <label className="lr-tool">
-          <span>{t("allReports")}</span>
-          <select value={selectedReport} onChange={(e) => setSelectedReport(e.target.value)}>
-            <option value="all">{t("allReports")}</option>
-            {REPORTS.map((r) => (
-              <option key={r.id} value={r.id}>
-                {t(r.label)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="lr-tool">
+        </div>
+        <div className="lr-tool">
           <span>{t("dob")}</span>
-          <input
-            type="text"
-            dir="ltr"
-            placeholder="DD/MM/YYYY"
+          <DateField
             value={patientDob}
-            onChange={(e) => setPatientDob(e.target.value)}
-            style={{ width: "7.5rem" }}
+            onChange={setPatientDob}
+            lang={lang}
+            ariaLabel={t("dob")}
+            clearable
           />
-        </label>
-        <label className="lr-tool lr-upload">
+        </div>
+        <div className="lr-tool lr-upload">
           <span>{t("uploadCsv")}</span>
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onUpload(f);
-            }}
-          />
-        </label>
+          <label className="lr-field-btn lr-file-btn">
+            <span className="lr-file-name">
+              {fileName || (lang === "ar" ? "اختيار ملف…" : "Choose file…")}
+            </span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onUpload(f);
+              }}
+            />
+          </label>
+        </div>
         <button type="button" className="lr-btn lr-btn-primary" onClick={() => window.print()}>
           {t("printReport")}
         </button>
@@ -173,6 +241,12 @@ export default function LibreReportPage() {
 
       {error ? <div className="lr-error">{error}</div> : null}
       {loading ? <div className="lr-loading">…</div> : null}
+
+      {dragOver ? (
+        <div className="lr-drop-overlay lr-noprint" aria-hidden="true">
+          <div className="lr-drop-card">{t("dropCsvHere")}</div>
+        </div>
+      ) : null}
 
       {!ctx && !loading ? (
         <main className="lr-empty" role="status">
@@ -195,6 +269,27 @@ export default function LibreReportPage() {
                 }}
               />
             </label>
+            <div className="lr-empty-or">{t("orWord")}</div>
+            <form
+              className="lr-url-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (csvUrl.trim()) void loadFromUrl(csvUrl.trim());
+              }}
+            >
+              <input
+                type="url"
+                dir="ltr"
+                placeholder="https://…/glucose.csv"
+                aria-label={t("loadFromUrl")}
+                value={csvUrl}
+                onChange={(e) => setCsvUrl(e.target.value)}
+              />
+              <button type="submit" className="lr-btn lr-btn-primary">
+                {t("load")}
+              </button>
+            </form>
+            <p className="lr-empty-drophint">{t("dropCsvHint")}</p>
             <small>
               {lang === "ar"
                 ? "لا يتم رفع بياناتك إلى أي خادم."
@@ -202,6 +297,22 @@ export default function LibreReportPage() {
             </small>
           </div>
         </main>
+      ) : null}
+
+      {ctx ? (
+        <nav className="lr-tabs lr-noprint" aria-label={t("allReports")}>
+          {[{ id: "all", label: "allReports" as LabelKey }, ...REPORTS].map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={"lr-tab" + (selectedReport === r.id ? " lr-tab-active" : "")}
+              aria-current={selectedReport === r.id ? "true" : undefined}
+              onClick={() => setSelectedReport(r.id)}
+            >
+              {t(r.label)}
+            </button>
+          ))}
+        </nav>
       ) : null}
 
       {ctx ? (

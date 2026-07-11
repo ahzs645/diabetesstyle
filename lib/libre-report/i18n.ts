@@ -190,6 +190,18 @@ const dict = {
   serialNumber: { ar: "الرقم التسلسلي", en: "Serial Number" },
   // page chrome
   uploadCsv: { ar: "تحميل ملف CSV", en: "Upload CSV" },
+  loadFromUrl: { ar: "التحميل من رابط", en: "Load from URL" },
+  load: { ar: "تحميل", en: "Load" },
+  orWord: { ar: "أو", en: "or" },
+  dropCsvHint: {
+    ar: "أو اسحب ملف CSV وأفلته في أي مكان على الصفحة.",
+    en: "You can also drag & drop a CSV file anywhere on the page.",
+  },
+  dropCsvHere: { ar: "أفلت ملف CSV هنا", en: "Drop the CSV file here" },
+  fetchCsvError: {
+    ar: "تعذر تحميل الملف من الرابط",
+    en: "Could not load the file from the URL",
+  },
   loadSample: { ar: "تحميل البيانات النموذجية", en: "Load sample data" },
   printReport: { ar: "طباعة التقرير", en: "Print report" },
   reportPeriod: { ar: "فترة التقرير", en: "Report period" },

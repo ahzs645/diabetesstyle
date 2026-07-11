@@ -131,6 +131,21 @@ export function TimeInRangesBar({
   );
 
   const barWidth = 34;
+  // Boundary labels sit at the segment edges, but tiny sliver segments would
+  // stack them on top of each other (e.g. 250/180 when Very High + High are
+  // both ~0%). Spread them apart and keep a tick at the true boundary.
+  const thresholds = [
+    { value: targets.veryHigh, boundary: offsets[1] },
+    { value: targets.high, boundary: offsets[2] },
+    { value: targets.low, boundary: offsets[3] },
+    { value: targets.veryLow, boundary: offsets[4] },
+  ];
+  const threshLabelYs = spreadPositions(
+    thresholds.map((th) => th.boundary),
+    11,
+    5,
+    height - 3,
+  );
   return (
     <div className="lr-tir" style={{ height }}>
       <svg
@@ -153,18 +168,27 @@ export function TimeInRangesBar({
           </rect>
         ))}
         {/* threshold labels beside the bar */}
-        <text x={22} y={offsets[1] + 4} className="lr-tir-thresh" textAnchor="end" direction="ltr">
-          {targets.veryHigh}
-        </text>
-        <text x={22} y={offsets[2] + 4} className="lr-tir-thresh" textAnchor="end" direction="ltr">
-          {targets.high}
-        </text>
-        <text x={22} y={offsets[3] + 4} className="lr-tir-thresh" textAnchor="end" direction="ltr">
-          {targets.low}
-        </text>
-        <text x={22} y={offsets[4] + 4} className="lr-tir-thresh" textAnchor="end" direction="ltr">
-          {targets.veryLow}
-        </text>
+        {thresholds.map((th, i) => (
+          <g key={th.value}>
+            <line
+              x1={23.5}
+              y1={th.boundary}
+              x2={25.5}
+              y2={th.boundary}
+              stroke="#999"
+              strokeWidth={1}
+            />
+            <text
+              x={21}
+              y={threshLabelYs[i] + 3}
+              className="lr-tir-thresh"
+              textAnchor="end"
+              direction="ltr"
+            >
+              {th.value}
+            </text>
+          </g>
+        ))}
       </svg>
       <div className="lr-tir-labels">
         {rows.map((row, i) => {
