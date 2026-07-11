@@ -57,6 +57,71 @@
   font-weight: 700;
 }
 .lr-empty-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.lr-empty-or {
+  margin: 1rem 0 0.75rem;
+  color: #8a999f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lr-empty-or::before,
+.lr-empty-or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid #e3eaed;
+}
+.lr-url-row {
+  display: flex;
+  gap: 8px;
+}
+.lr-url-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #cfdae0;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--lr-ink);
+}
+.lr-url-row input:focus {
+  outline: none;
+  border-color: var(--lr-blue);
+  box-shadow: 0 0 0 2px rgb(46 139 200 / 18%);
+}
+.lr-url-row .lr-btn {
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.1rem;
+}
+.lr-empty-drophint {
+  margin: 0.9rem 0 0;
+  color: #6d7e84;
+  font-size: 0.78rem;
+}
+
+/* full-page drop target overlay */
+.lr-drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgb(46 139 200 / 14%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.lr-drop-card {
+  border: 2px dashed var(--lr-blue);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--lr-blue);
+  font-size: 1.15rem;
+  font-weight: 800;
+  padding: 2rem 3rem;
+  box-shadow: 0 18px 60px rgb(20 40 55 / 20%);
+}
 
 /* ---------------- toolbar ---------------- */
 .lr-toolbar {

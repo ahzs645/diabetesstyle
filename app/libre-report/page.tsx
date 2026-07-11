@@ -58,6 +58,8 @@ export default function LibreReportPage() {
   // ISO yyyy-mm-dd; shown as DD/MM/YYYY on the report header
   const [patientDob, setPatientDob] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
+  const [csvUrl, setCsvUrl] = useState<string>("");
+  const [dragOver, setDragOver] = useState(false);
 
   const t = makeT(lang);
 
@@ -76,6 +78,7 @@ export default function LibreReportPage() {
     async (file: File) => {
       setLoading(true);
       try {
+        setFileName(file.name);
         applyData(parseLibreExport(await file.text()));
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -85,6 +88,71 @@ export default function LibreReportPage() {
     },
     [applyData],
   );
+
+  const loadFromUrl = useCallback(
+    async (url: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        applyData(parseLibreExport(await res.text()));
+        const name = url.split("/").pop()?.split("?")[0];
+        setFileName(name ? decodeURIComponent(name) : url);
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        setError(`${makeT(lang)("fetchCsvError")}: ${detail}`);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyData, lang],
+  );
+
+  // ?csv=<url> in the page address loads that export on startup
+  useEffect(() => {
+    const src = new URLSearchParams(window.location.search).get("csv");
+    if (src) void loadFromUrl(src);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
+
+  // drag & drop a CSV anywhere on the page
+  useEffect(() => {
+    const hasFiles = (e: DragEvent) =>
+      e.dataTransfer?.types.includes("Files") ?? false;
+    let depth = 0;
+    const onEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth++;
+      setDragOver(true);
+    };
+    const onOver = (e: DragEvent) => {
+      if (hasFiles(e)) e.preventDefault();
+    };
+    const onLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setDragOver(false);
+    };
+    const onDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth = 0;
+      setDragOver(false);
+      const f = e.dataTransfer?.files?.[0];
+      if (f) void onUpload(f);
+    };
+    document.addEventListener("dragenter", onEnter);
+    document.addEventListener("dragover", onOver);
+    document.addEventListener("dragleave", onLeave);
+    document.addEventListener("drop", onDrop);
+    return () => {
+      document.removeEventListener("dragenter", onEnter);
+      document.removeEventListener("dragover", onOver);
+      document.removeEventListener("dragleave", onLeave);
+      document.removeEventListener("drop", onDrop);
+    };
+  }, [onUpload]);
 
   const ctx: ReportContext | null = useMemo(() => {
     if (!data || !endDate) return null;
@@ -154,10 +222,7 @@ export default function LibreReportPage() {
               accept=".csv,text/csv"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) {
-                  setFileName(f.name);
-                  void onUpload(f);
-                }
+                if (f) void onUpload(f);
               }}
             />
           </label>
@@ -177,6 +242,12 @@ export default function LibreReportPage() {
       {error ? <div className="lr-error">{error}</div> : null}
       {loading ? <div className="lr-loading">…</div> : null}
 
+      {dragOver ? (
+        <div className="lr-drop-overlay lr-noprint" aria-hidden="true">
+          <div className="lr-drop-card">{t("dropCsvHere")}</div>
+        </div>
+      ) : null}
+
       {!ctx && !loading ? (
         <main className="lr-empty" role="status">
           <div className="lr-empty-card">
@@ -194,13 +265,31 @@ export default function LibreReportPage() {
                 accept=".csv,text/csv"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) {
-                    setFileName(f.name);
-                    void onUpload(f);
-                  }
+                  if (f) void onUpload(f);
                 }}
               />
             </label>
+            <div className="lr-empty-or">{t("orWord")}</div>
+            <form
+              className="lr-url-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (csvUrl.trim()) void loadFromUrl(csvUrl.trim());
+              }}
+            >
+              <input
+                type="url"
+                dir="ltr"
+                placeholder="https://…/glucose.csv"
+                aria-label={t("loadFromUrl")}
+                value={csvUrl}
+                onChange={(e) => setCsvUrl(e.target.value)}
+              />
+              <button type="submit" className="lr-btn lr-btn-primary">
+                {t("load")}
+              </button>
+            </form>
+            <p className="lr-empty-drophint">{t("dropCsvHint")}</p>
             <small>
               {lang === "ar"
                 ? "لا يتم رفع بياناتك إلى أي خادم."
