@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { formatDayMonth, makeT, weekdayName } from "../../lib/libre-report/i18n";
 import { minutesOfDay } from "../../lib/libre-report/stats";
+import { AutoWidth } from "./auto-width";
 import { DayChart } from "./charts";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
@@ -37,29 +38,36 @@ export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
             <div className="lr-log-day-title">
               {weekdayName(day.day.getDay(), lang, true)} {formatDayMonth(day.day, lang)}
             </div>
-            <DayChart
-              historic={day.historic}
-              scans={day.scans}
-              targets={targets}
-              lang={lang}
-              markers={markers}
-            />
-            <table className="lr-hourly-table" dir="ltr">
-              <tbody>
-                <tr>
-                  <th className="lr-hourly-head">{t("maxLabel")}</th>
-                  {day.hourlyMax.map((v, i) => (
-                    <td key={i}>{v === null ? "" : Math.round(v)}</td>
-                  ))}
-                </tr>
-                <tr>
-                  <th className="lr-hourly-head">{t("minLabel")}</th>
-                  {day.hourlyMin.map((v, i) => (
-                    <td key={i}>{v === null ? "" : Math.round(v)}</td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
+            <AutoWidth>
+              {(w) => (
+                <DayChart
+                  historic={day.historic}
+                  scans={day.scans}
+                  targets={targets}
+                  lang={lang}
+                  markers={markers}
+                  width={w}
+                />
+              )}
+            </AutoWidth>
+            <div className="lr-hscroll">
+              <table className="lr-hourly-table" dir="ltr">
+                <tbody>
+                  <tr>
+                    <th className="lr-hourly-head">{t("maxLabel")}</th>
+                    {day.hourlyMax.map((v, i) => (
+                      <td key={i}>{v === null ? "" : Math.round(v)}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <th className="lr-hourly-head">{t("minLabel")}</th>
+                    {day.hourlyMin.map((v, i) => (
+                      <td key={i}>{v === null ? "" : Math.round(v)}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         );
       })}

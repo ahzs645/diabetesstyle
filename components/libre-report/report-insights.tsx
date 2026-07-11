@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { formatNumber, formatPct, formatPeriod, makeT } from "../../lib/libre-report/i18n";
 import { readingsInPeriod } from "../../lib/libre-report/stats";
+import { AutoWidth } from "./auto-width";
 import { PatternsScatterChart, TimeInRangesBar } from "./charts";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
@@ -103,12 +104,17 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
         <h3 className="lr-box-title">
           {t("glucosePatterns")} ({ctx.period.days} {t("days")})
         </h3>
-        <PatternsScatterChart
-          historic={historic}
-          profile={ctx.agp}
-          targets={targets}
-          lang={lang}
-        />
+        <AutoWidth>
+          {(w) => (
+            <PatternsScatterChart
+              historic={historic}
+              profile={ctx.agp}
+              targets={targets}
+              lang={lang}
+              width={w}
+            />
+          )}
+        </AutoWidth>
       </div>
 
       <div className="lr-footer-notes">

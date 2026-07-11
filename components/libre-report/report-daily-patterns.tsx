@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { formatNumber, makeT } from "../../lib/libre-report/i18n";
 import { minutesOfDay, readingsInPeriod, twoHourAverages } from "../../lib/libre-report/stats";
+import { AutoWidth } from "./auto-width";
 import { AgpChart } from "./charts";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
@@ -41,13 +42,18 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
           <div className="lr-dp-unit">{t("mgdl")}</div>
         </div>
         {ctx.agp ? (
-          <AgpChart
-            profile={ctx.agp}
-            targets={ctx.targets}
-            lang={lang}
-            height={300}
-            yTicks={[0, 25, 50, 70, 100, 125, 150, 180, 200, 225, 250, 275, 300, 325, 350]}
-          />
+          <AutoWidth>
+            {(w) => (
+              <AgpChart
+                profile={ctx.agp!}
+                targets={ctx.targets}
+                lang={lang}
+                height={300}
+                width={w}
+                yTicks={[0, 25, 50, 70, 100, 125, 150, 180, 200, 225, 250, 275, 300, 325, 350]}
+              />
+            )}
+          </AutoWidth>
         ) : (
           <div className="lr-empty">{t("noData")}</div>
         )}
@@ -58,7 +64,9 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
           <span className="lr-dp-icon">🍎</span> {t("carbs")}
           <div className="lr-dp-unit">{t("gramsUnit")}</div>
         </div>
-        <CarbsStrip food={foodInPeriod} lang={lang} />
+        <AutoWidth>
+          {(w) => <CarbsStrip food={foodInPeriod} lang={lang} width={w} />}
+        </AutoWidth>
       </div>
 
       <div className="lr-dp-chart">
@@ -67,7 +75,9 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
           <br />
           <span className="lr-dp-icon">💉</span> {t("longActingInsulin")}
         </div>
-        <InsulinStrip ctx={ctx} />
+        <AutoWidth>
+          {(w) => <InsulinStrip ctx={ctx} width={w} />}
+        </AutoWidth>
       </div>
     </ReportPage>
   );
@@ -76,22 +86,24 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
 function CarbsStrip({
   food,
   lang,
+  width = 700,
 }: {
   food: ReportContext["data"]["food"];
   lang: ReportContext["lang"];
+  width?: number;
 }): ReactElement {
-  const width = 700;
   const height = 90;
   const margin = { left: 34, right: 40, top: 12, bottom: 14 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
+  const labelStep = width < 460 ? 4 : 2;
   const maxG = Math.max(30, ...food.map((f) => f.grams ?? 0));
   void lang;
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="lr-dp-strip" role="img">
       <g transform={`translate(${margin.left},${margin.top})`}>
         <rect x={0} y={0} width={w} height={h} fill="#ffffff" stroke={LR_COLORS.gridLine} strokeWidth={0.7} />
-        {Array.from({ length: 13 }, (_, i) => i * 2).map((hh) => (
+        {Array.from({ length: 24 / labelStep + 1 }, (_, i) => i * labelStep).map((hh) => (
           <g key={hh}>
             <line
               x1={xForMinutes(hh * 60, w)}
@@ -126,11 +138,17 @@ function CarbsStrip({
   );
 }
 
-function InsulinStrip({ ctx }: { ctx: ReportContext }): ReactElement {
-  const width = 700;
+function InsulinStrip({
+  ctx,
+  width = 700,
+}: {
+  ctx: ReportContext;
+  width?: number;
+}): ReactElement {
   const height = 64;
   const margin = { left: 34, right: 40, top: 12, bottom: 6 };
   const w = width - margin.left - margin.right;
+  const labelStep = width < 460 ? 4 : 2;
   const rowH = 20;
   const insulin = ctx.data.insulin.filter(
     (e) => e.time >= ctx.period.start && e.time < ctx.period.end,
@@ -150,7 +168,7 @@ function InsulinStrip({ ctx }: { ctx: ReportContext }): ReactElement {
             strokeWidth={0.7}
           />
         ))}
-        {Array.from({ length: 13 }, (_, i) => i * 2).map((hh) => (
+        {Array.from({ length: 24 / labelStep + 1 }, (_, i) => i * labelStep).map((hh) => (
           <g key={hh}>
             <line
               x1={xForMinutes(hh * 60, w)}
