@@ -50,6 +50,13 @@ const REPORTS: { id: string; label: LabelKey }[] = [
 
 const PERIOD_CHOICES = [7, 14, 30, 90];
 const DEFAULT_PERIOD_DAYS = 14;
+
+/**
+ * The DOB field is excluded by default: no toolbar picker, no header line
+ * and the ?dob= URL parameter is ignored. Build with VITE_SHOW_DOB=true to
+ * re-enable it.
+ */
+const SHOW_DOB = import.meta.env.VITE_SHOW_DOB === "true";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function parseIsoLocal(iso: string): Date | null {
@@ -146,15 +153,18 @@ export default function LibreReportPage() {
     [applyData, lang],
   );
 
-  // ?csv=<url> loads that export on startup; ?dob=DD/MM/YYYY fills the header
+  // ?csv=<url> loads that export on startup; with the DOB flag enabled,
+  // ?dob=DD/MM/YYYY prefills the header
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const src = params.get("csv");
     if (src) void loadFromUrl(src);
-    const dob = params.get("dob");
-    if (dob) {
-      const iso = parseDateText(dob);
-      if (iso) setPatientDob(iso);
+    if (SHOW_DOB) {
+      const dob = params.get("dob");
+      if (dob) {
+        const iso = parseDateText(dob);
+        if (iso) setPatientDob(iso);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
@@ -213,7 +223,7 @@ export default function LibreReportPage() {
       lang,
       unit,
       patientName: data.generatedBy,
-      patientDob: formatDisplayDate(patientDob),
+      patientDob: SHOW_DOB ? formatDisplayDate(patientDob) || "—" : "",
       generatedAt: formatFullDate(new Date(), lang),
     };
   }, [data, startDate, endDate, lang, unit, patientDob]);
@@ -287,6 +297,18 @@ export default function LibreReportPage() {
             max={dataBounds?.max}
           />
         </div>
+        {SHOW_DOB ? (
+          <div className="lr-tool">
+            <span>{t("dob")}</span>
+            <DateField
+              value={patientDob}
+              onChange={setPatientDob}
+              lang={lang}
+              ariaLabel={t("dob")}
+              clearable
+            />
+          </div>
+        ) : null}
         <div className="lr-tool lr-upload">
           <span>{t("uploadCsv")}</span>
           <label className="lr-field-btn lr-file-btn">

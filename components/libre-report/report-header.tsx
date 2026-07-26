@@ -37,9 +37,11 @@ export function ReportPage({
         </div>
         <div className="lr-page-header-trail">
           <div className="lr-patient-name">{ctx.patientName || "—"}</div>
-          <div className="lr-patient-meta">
-            {t("dob")}: <span dir="ltr">{ctx.patientDob || "—"}</span>
-          </div>
+          {ctx.patientDob ? (
+            <div className="lr-patient-meta">
+              {t("dob")}: <span dir="ltr">{ctx.patientDob}</span>
+            </div>
+          ) : null}
           <div className="lr-patient-meta">
             {t("generated")}: <span dir="ltr">{ctx.generatedAt}</span>
           </div>
