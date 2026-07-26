@@ -8,6 +8,7 @@ import {
 } from "../../lib/libre-report/i18n";
 import type { DayStats } from "../../lib/libre-report/stats";
 import type { ReportContext } from "./context";
+import { LowEventIcon, ScanIcon, SensorIcon } from "./icons";
 import { ReportPage } from "./report-header";
 
 /**
@@ -72,14 +73,14 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
                             </div>
                             <div className="lr-cal-scans">
                               <b dir="ltr">{cell.scansViews}</b>{" "}
-                              <span className="lr-cal-scan-icon">📶</span>
+                              <span className="lr-cal-scan-icon"><ScanIcon /></span>
                             </div>
                             {"lowEvents" in cell && cell.lowEvents > 0 ? (
                               <div className="lr-cal-lows">
                                 {Array.from({ length: Math.min(cell.lowEvents, 5) }).map(
                                   (_, i) => (
                                     <span key={i} className="lr-cal-low-icon">
-                                      ⬇
+                                      <LowEventIcon />
                                     </span>
                                   ),
                                 )}
@@ -97,13 +98,13 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
         </table>
         <div className="lr-cal-legend">
           <div>
-            <span className="lr-cal-legend-icon">📱</span> {t("avgGlucoseLegend")}
+            <span className="lr-cal-legend-icon"><SensorIcon /></span> {t("avgGlucoseLegend")}
           </div>
           <div>
-            <span className="lr-cal-legend-icon">📶</span> {t("scansViews")}
+            <span className="lr-cal-legend-icon"><ScanIcon /></span> {t("scansViews")}
           </div>
           <div>
-            <span className="lr-cal-legend-icon lr-cal-low-icon">⬇</span>{" "}
+            <span className="lr-cal-legend-icon lr-cal-low-icon"><LowEventIcon /></span>{" "}
             {t("lowGlucoseEventsLegend")}
           </div>
         </div>

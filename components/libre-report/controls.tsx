@@ -187,7 +187,7 @@ export function formatDisplayDate(iso: string): string {
 }
 
 /** Parse typed "DD/MM/YYYY" (or "yyyy-mm-dd") into ISO, or null. */
-function parseTyped(text: string): string | null {
+export function parseDateText(text: string): string | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
   let day: number, month: number, year: number;
@@ -210,6 +210,8 @@ export function DateField({
   lang,
   ariaLabel,
   clearable = false,
+  min,
+  max,
 }: {
   /** ISO "yyyy-mm-dd" or "" when unset. */
   value: string;
@@ -217,6 +219,10 @@ export function DateField({
   lang: ReportLang;
   ariaLabel: string;
   clearable?: boolean;
+  /** Earliest selectable day, ISO "yyyy-mm-dd". */
+  min?: string;
+  /** Latest selectable day, ISO "yyyy-mm-dd". */
+  max?: string;
 }): ReactElement {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(() => formatDisplayDate(value));
@@ -234,18 +240,24 @@ export function DateField({
   }, [value]);
 
   const openCalendar = () => {
-    const d = parseIso(value) ?? today.current;
+    const d =
+      parseIso(value) ?? parseIso(clamp(toIsoDate(today.current))) ?? today.current;
     setViewYear(d.getFullYear());
     setViewMonth(d.getMonth());
     setView("days");
     setOpen(true);
   };
 
+  // ISO strings compare correctly as plain strings
+  const inRange = (iso: string) => (!min || iso >= min) && (!max || iso <= max);
+  const clamp = (iso: string) => (min && iso < min ? min : max && iso > max ? max : iso);
+
   const commitText = () => {
-    const iso = parseTyped(text);
+    const iso = parseDateText(text);
     if (iso) {
-      onChange(iso);
-      setText(formatDisplayDate(iso));
+      const clamped = clamp(iso);
+      onChange(clamped);
+      setText(formatDisplayDate(clamped));
     } else if (clearable && text.trim() === "") {
       onChange("");
     } else {
@@ -358,10 +370,12 @@ export function DateField({
               ))}
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const iso = toIsoDate(new Date(viewYear, viewMonth, i + 1));
+                const disabled = !inRange(iso);
                 return (
                   <button
                     key={iso}
                     type="button"
+                    disabled={disabled}
                     className={
                       "lr-pick-day" +
                       (iso === selectedIso ? " lr-pick-selected" : "") +
@@ -376,19 +390,25 @@ export function DateField({
             </div>
           ) : (
             <div className="lr-pick-years">
-              {Array.from({ length: 12 }, (_, i) => yearBase + i).map((y) => (
-                <button
-                  key={y}
-                  type="button"
-                  className={"lr-pick-year" + (y === viewYear ? " lr-pick-selected" : "")}
-                  onClick={() => {
-                    setViewYear(y);
-                    setView("days");
-                  }}
-                >
-                  {y}
-                </button>
-              ))}
+              {Array.from({ length: 12 }, (_, i) => yearBase + i).map((y) => {
+                const yearDisabled =
+                  (min !== undefined && y < Number(min.slice(0, 4))) ||
+                  (max !== undefined && y > Number(max.slice(0, 4)));
+                return (
+                  <button
+                    key={y}
+                    type="button"
+                    disabled={yearDisabled}
+                    className={"lr-pick-year" + (y === viewYear ? " lr-pick-selected" : "")}
+                    onClick={() => {
+                      setViewYear(y);
+                      setView("days");
+                    }}
+                  >
+                    {y}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

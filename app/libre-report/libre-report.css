@@ -14,6 +14,14 @@
   color: var(--lr-ink);
 }
 
+/* SVG icons scale with the surrounding text like the emoji they replaced */
+.lr-icon {
+  width: 1.1em;
+  height: 1.1em;
+  display: inline-block;
+  vertical-align: -0.18em;
+}
+
 .lr-empty {
   min-height: calc(100vh - 76px);
   display: grid;
@@ -372,6 +380,15 @@
 .lr-pick-day:hover,
 .lr-pick-year:hover {
   background: #eef5fa;
+}
+.lr-pick-day:disabled,
+.lr-pick-year:disabled {
+  color: #c3ccd3;
+  cursor: default;
+}
+.lr-pick-day:disabled:hover,
+.lr-pick-year:disabled:hover {
+  background: none;
 }
 .lr-pick-today {
   box-shadow: inset 0 0 0 1px var(--lr-blue);
@@ -758,6 +775,17 @@
   color: var(--lr-muted);
   font-size: 0.66rem;
 }
+/* GMI shown in both units side by side, like the printed report */
+.lr-bigstat-duo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lr-bigstat-duo-or {
+  color: var(--lr-muted);
+  font-size: 0.75rem;
+}
 .lr-sep {
   border: none;
   border-top: 1px solid var(--lr-rule);
@@ -1001,11 +1029,7 @@
   font-size: 0.7rem;
 }
 .lr-weekly-low-icon {
-  color: #e02020;
-  border: 1px solid #e02020;
-  border-radius: 2px;
-  padding: 0 2px;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
 }
 .lr-weekly-unit {
   font-size: 0.55rem;
@@ -1074,11 +1098,7 @@
   margin-top: 1px;
 }
 .lr-cal-low-icon {
-  color: #e02020;
-  border: 1px solid #e02020;
-  border-radius: 2px;
-  font-size: 0.55rem;
-  padding: 0 1.5px;
+  font-size: 0.7rem;
   margin-inline-end: 2px;
 }
 .lr-cal-legend {

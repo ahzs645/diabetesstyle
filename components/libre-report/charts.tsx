@@ -3,6 +3,7 @@ import type { AgpProfile, GlucoseTargets, LowGlucoseEvent } from "../../lib/libr
 import { minutesOfDay } from "../../lib/libre-report/stats";
 import type { GlucoseReading } from "../../lib/libre-report/types";
 import type { GlucoseUnit, ReportLang } from "../../lib/libre-report/i18n";
+import { GlyphApple, GlyphSyringe } from "./icons";
 import {
   formatDurationOfDay,
   formatGlucose,
@@ -428,16 +429,22 @@ export function DayChart({
             ))
           : null}
         {markers?.map((m, i) => (
-          <text
-            key={`m${i}`}
-            x={xForMinutes(m.minutes, w)}
-            y={h - 3}
-            fontSize={9}
-            textAnchor="middle"
-          >
-            {m.kind === "food" ? "🍎" : m.kind === "insulin" ? "✎" : "▪"}
+          <g key={`m${i}`}>
+            {m.kind === "food" ? (
+              <GlyphApple x={xForMinutes(m.minutes, w)} y={h - 2} size={9} />
+            ) : m.kind === "insulin" ? (
+              <GlyphSyringe x={xForMinutes(m.minutes, w)} y={h - 2} size={9} />
+            ) : (
+              <rect
+                x={xForMinutes(m.minutes, w) - 2}
+                y={h - 7}
+                width={4}
+                height={4}
+                fill="currentColor"
+              />
+            )}
             <title>{m.label}</title>
-          </text>
+          </g>
         ))}
         <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} format={g} />
         {/* hour labels every 2h at the top, like the printed daily log */}
@@ -886,7 +893,7 @@ export function MealPeriodChart({
             <text x={w + 3} y={y(100) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(100)}</text>
           </g>
         ) : null}
-        <text x={x(0)} y={h + 10} fontSize={8} textAnchor="middle">🍎</text>
+        <GlyphApple x={x(0)} y={h + 11} size={8} />
         <text x={x(-60) + (x(0) - x(-60)) / 2} y={h + 20} fontSize={6} fill={LR_COLORS.axisText} textAnchor="middle">
           {t("preMeal")}
         </text>

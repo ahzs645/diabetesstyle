@@ -30,6 +30,7 @@ import { DeviceDetailsReport } from "../../components/libre-report/report-device
 import {
   DateField,
   formatDisplayDate,
+  parseDateText,
   Select,
   toIsoDate,
 } from "../../components/libre-report/controls";
@@ -48,6 +49,22 @@ const REPORTS: { id: string; label: LabelKey }[] = [
 ];
 
 const PERIOD_CHOICES = [7, 14, 30, 90];
+const DEFAULT_PERIOD_DAYS = 14;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function parseIsoLocal(iso: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+/** Whole days between two ISO dates, inclusive of both ends. */
+function spanDays(startIso: string, endIso: string): number {
+  const s = parseIsoLocal(startIso);
+  const e = parseIsoLocal(endIso);
+  if (!s || !e) return 0;
+  return Math.max(1, Math.round((e.getTime() - s.getTime()) / MS_PER_DAY) + 1);
+}
 
 export default function LibreReportPage() {
   const [lang, setLang] = useState<ReportLang>("ar");
@@ -55,10 +72,10 @@ export default function LibreReportPage() {
   const [data, setData] = useState<LibreExport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [days, setDays] = useState(14);
+  const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedReport, setSelectedReport] = useState<string>("all");
-  // ISO yyyy-mm-dd; shown as DD/MM/YYYY on the report header
+  // ISO yyyy-mm-dd from the ?dob= query param; shown as DD/MM/YYYY on the header
   const [patientDob, setPatientDob] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [csvUrl, setCsvUrl] = useState<string>("");
@@ -69,9 +86,26 @@ export default function LibreReportPage() {
   const applyData = useCallback((parsed: LibreExport) => {
     setData(parsed);
     setError(null);
+    const first = parsed.readings[0]?.time;
     const last = parsed.readings.at(-1)?.time;
-    if (last) setEndDate(toIsoDate(last));
+    if (first && last) {
+      setEndDate(toIsoDate(last));
+      const start = new Date(last);
+      start.setDate(start.getDate() - (DEFAULT_PERIOD_DAYS - 1));
+      setStartDate(toIsoDate(start < first ? first : start));
+    }
   }, []);
+
+  // first/last day with readings: the calendars never go outside these
+  const dataBounds = useMemo(() => {
+    const first = data?.readings[0]?.time;
+    const last = data?.readings.at(-1)?.time;
+    return first && last ? { min: toIsoDate(first), max: toIsoDate(last) } : null;
+  }, [data]);
+
+  const days =
+    startDate && endDate ? spanDays(startDate, endDate) : DEFAULT_PERIOD_DAYS;
+  const isPresetPeriod = PERIOD_CHOICES.includes(days);
 
   useEffect(() => {
     document.title = lang === "ar" ? "تقارير الجلوكوز" : "Glucose Reports";
@@ -112,10 +146,16 @@ export default function LibreReportPage() {
     [applyData, lang],
   );
 
-  // ?csv=<url> in the page address loads that export on startup
+  // ?csv=<url> loads that export on startup; ?dob=DD/MM/YYYY fills the header
   useEffect(() => {
-    const src = new URLSearchParams(window.location.search).get("csv");
+    const params = new URLSearchParams(window.location.search);
+    const src = params.get("csv");
     if (src) void loadFromUrl(src);
+    const dob = params.get("dob");
+    if (dob) {
+      const iso = parseDateText(dob);
+      if (iso) setPatientDob(iso);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
@@ -158,9 +198,9 @@ export default function LibreReportPage() {
   }, [onUpload]);
 
   const ctx: ReportContext | null = useMemo(() => {
-    if (!data || !endDate) return null;
+    if (!data || !startDate || !endDate) return null;
     const [y, m, d] = endDate.split("-").map(Number);
-    const period = makePeriod(new Date(y, m - 1, d), days);
+    const period = makePeriod(new Date(y, m - 1, d), spanDays(startDate, endDate));
     const stats = computePeriodStats(data, period, DEFAULT_TARGETS);
     const historic = readingsInPeriod(data, period).filter((r) => r.historic);
     return {
@@ -176,7 +216,7 @@ export default function LibreReportPage() {
       patientDob: formatDisplayDate(patientDob),
       generatedAt: formatFullDate(new Date(), lang),
     };
-  }, [data, endDate, days, lang, unit, patientDob]);
+  }, [data, startDate, endDate, lang, unit, patientDob]);
 
   const show = (id: string) => selectedReport === "all" || selectedReport === id;
 
@@ -187,12 +227,23 @@ export default function LibreReportPage() {
         <div className="lr-tool">
           <span>{t("reportPeriod")}</span>
           <Select
-            value={String(days)}
-            options={PERIOD_CHOICES.map((d) => ({
-              value: String(d),
-              label: `${d} ${t("days")}`,
-            }))}
-            onChange={(v) => setDays(Number(v))}
+            value={isPresetPeriod ? String(days) : "custom"}
+            options={[
+              ...PERIOD_CHOICES.map((d) => ({
+                value: String(d),
+                label: `${d} ${t("days")}`,
+              })),
+              ...(isPresetPeriod
+                ? []
+                : [{ value: "custom", label: t("customPeriod") }]),
+            ]}
+            onChange={(v) => {
+              if (v === "custom" || !endDate) return;
+              const end = parseIsoLocal(endDate);
+              if (!end) return;
+              end.setDate(end.getDate() - (Number(v) - 1));
+              setStartDate(toIsoDate(end));
+            }}
             ariaLabel={t("reportPeriod")}
           />
         </div>
@@ -209,22 +260,31 @@ export default function LibreReportPage() {
           />
         </div>
         <div className="lr-tool">
-          <span>{t("endDate")}</span>
+          <span>{t("startDate")}</span>
           <DateField
-            value={endDate}
-            onChange={setEndDate}
+            value={startDate}
+            onChange={(iso) => {
+              setStartDate(iso);
+              if (endDate && iso > endDate) setEndDate(iso);
+            }}
             lang={lang}
-            ariaLabel={t("endDate")}
+            ariaLabel={t("startDate")}
+            min={dataBounds?.min}
+            max={dataBounds?.max}
           />
         </div>
         <div className="lr-tool">
-          <span>{t("dob")}</span>
+          <span>{t("endDate")}</span>
           <DateField
-            value={patientDob}
-            onChange={setPatientDob}
+            value={endDate}
+            onChange={(iso) => {
+              setEndDate(iso);
+              if (startDate && iso < startDate) setStartDate(iso);
+            }}
             lang={lang}
-            ariaLabel={t("dob")}
-            clearable
+            ariaLabel={t("endDate")}
+            min={dataBounds?.min}
+            max={dataBounds?.max}
           />
         </div>
         <div className="lr-tool lr-upload">

@@ -84,21 +84,31 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
             <div className="lr-bigstat">
               <div className="lr-bigstat-label">(GMI) {t("gmi")}</div>
               <div className="lr-bigstat-note">{t("gmiApprox")}</div>
-              <div className="lr-bigstat-value" dir="ltr">
-                {stats.gmiPercent === null
-                  ? "—"
-                  : unit === "mmol/L"
-                    ? formatNumber(stats.gmiMmolMol!, lang)
-                    : formatNumber(stats.gmiPercent, lang, 1)}
-                <span className="lr-bigstat-unit">
-                  {unit === "mmol/L" ? t("mmolMol") : "%"}
-                </span>
-              </div>
-              <div className="lr-bigstat-target">
-                {unit === "mmol/L"
-                  ? `${t("goal")}: ≤53 ${t("mmolMol")}`
-                  : `${t("goal")}: <${formatPct(7, lang, 1)}`}
-              </div>
+              {stats.gmiPercent === null ? (
+                <div className="lr-bigstat-value">—</div>
+              ) : (
+                <div className="lr-bigstat-duo">
+                  <div className="lr-bigstat-duo-item">
+                    <div className="lr-bigstat-value" dir="ltr">
+                      {formatNumber(stats.gmiPercent, lang, 1)}
+                      <span className="lr-bigstat-unit">%</span>
+                    </div>
+                    <div className="lr-bigstat-target">
+                      {t("goal")}: {"<"}{formatPct(7, lang, 1)}
+                    </div>
+                  </div>
+                  <div className="lr-bigstat-duo-or">{t("orWord")}</div>
+                  <div className="lr-bigstat-duo-item">
+                    <div className="lr-bigstat-value" dir="ltr">
+                      {formatNumber(stats.gmiMmolMol!, lang)}
+                      <span className="lr-bigstat-unit">{t("mmolMol")}</span>
+                    </div>
+                    <div className="lr-bigstat-target">
+                      {t("goal")}: ≤53 {t("mmolMol")}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

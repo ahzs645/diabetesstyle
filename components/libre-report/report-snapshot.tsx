@@ -2,11 +2,19 @@ import type { ReactElement } from "react";
 import {
   formatGlucose,
   formatNumber,
+  formatPct,
   glucoseUnitLabel,
   makeT,
 } from "../../lib/libre-report/i18n";
 import { readingsInPeriod, sensorUsageByTime } from "../../lib/libre-report/stats";
 import { LowEventsChart, MedianChart, SensorUsageChart } from "./charts";
+import {
+  AppleIcon,
+  LongInsulinIcon,
+  RapidInsulinIcon,
+  ScanIcon,
+  SensorIcon,
+} from "./icons";
 import type { ReportContext } from "./context";
 import { ReportPage } from "./report-header";
 
@@ -39,14 +47,15 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
       <div className="lr-snapshot-grid">
         <div className="lr-snapshot-main">
           <h3 className="lr-section-rule">
-            {t("glucose")}{" "}
-            <span className="lr-gmi-inline" dir="ltr">
+            {t("glucose")} <SensorIcon />{" "}
+            <span className="lr-gmi-inline">
               GMI{" "}
               {stats.gmiPercent === null
                 ? "—"
-                : unit === "mmol/L"
-                  ? `${formatNumber(stats.gmiMmolMol!, lang)} ${t("mmolMol")}`
-                  : `${formatNumber(stats.gmiPercent, lang, 1)}%`}
+                : `${formatPct(stats.gmiPercent, lang, 1)} ${t("orWord")} ${formatNumber(
+                    stats.gmiMmolMol!,
+                    lang,
+                  )} ${t("mmolMol")}`}
             </span>
           </h3>
           <div className="lr-snapshot-row">
@@ -98,7 +107,9 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
             <LowEventsChart events={stats.lowEvents} lang={lang} unit={unit} threshold={targets.low} />
           </div>
 
-          <h3 className="lr-section-rule">{t("sensorUsage")}</h3>
+          <h3 className="lr-section-rule">
+            {t("sensorUsage")} <ScanIcon />
+          </h3>
           <div className="lr-snapshot-row">
             <div className="lr-snapshot-stats">
               <div className="lr-kpi">
@@ -124,7 +135,7 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
         <aside className="lr-snapshot-side">
           <h3 className="lr-section-rule">{t("carbs")}</h3>
           <div className="lr-side-item">
-            <span className="lr-side-icon">🍎</span>
+            <span className="lr-side-icon"><AppleIcon /></span>
             <div>
               <div className="lr-side-label">{t("dailyCarbs")}</div>
               <div className="lr-side-value">
@@ -137,7 +148,7 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
           </div>
           <h3 className="lr-section-rule">{t("insulin")}</h3>
           <div className="lr-side-item">
-            <span className="lr-side-icon">💉</span>
+            <span className="lr-side-icon"><RapidInsulinIcon /></span>
             <div>
               <div className="lr-side-label">{t("rapidActingInsulin")}</div>
               <div className="lr-side-value">
@@ -149,7 +160,7 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
             </div>
           </div>
           <div className="lr-side-item">
-            <span className="lr-side-icon">💉</span>
+            <span className="lr-side-icon"><LongInsulinIcon /></span>
             <div>
               <div className="lr-side-label">{t("longActingInsulin")}</div>
               <div className="lr-side-value">
