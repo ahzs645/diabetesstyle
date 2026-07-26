@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { formatGlucose, glucoseUnitLabel, makeT } from "../../lib/libre-report/i18n";
 import type { ReportContext } from "./context";
+import { SensorIcon } from "./icons";
 import { ReportPage } from "./report-header";
 
 export function DeviceDetailsReport({ ctx }: { ctx: ReportContext }): ReactElement {
@@ -14,7 +15,7 @@ export function DeviceDetailsReport({ ctx }: { ctx: ReportContext }): ReactEleme
           {ctx.data.devices.map((d) => (
             <div key={d} className="lr-device-card">
               <div className="lr-device-phone" aria-hidden>
-                📱
+                <SensorIcon />
               </div>
               <div>
                 <div className="lr-device-name">{d}</div>

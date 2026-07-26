@@ -8,6 +8,7 @@ import { minutesOfDay, readingsInPeriod, twoHourAverages } from "../../lib/libre
 import { AutoWidth } from "./auto-width";
 import { AgpChart } from "./charts";
 import type { ReportContext } from "./context";
+import { AppleIcon, DropIcon, LongInsulinIcon, RapidInsulinIcon } from "./icons";
 import { ReportPage } from "./report-header";
 import { hourLabel, LR_COLORS, xForMinutes } from "./primitives";
 
@@ -42,7 +43,7 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
 
       <div className="lr-dp-chart">
         <div className="lr-dp-rowlabel">
-          <span className="lr-dp-icon">💧</span> {t("glucose")}
+          <span className="lr-dp-icon"><DropIcon /></span> {t("glucose")}
           <div className="lr-dp-unit">{glucoseUnitLabel(unit, lang)}</div>
         </div>
         {ctx.agp ? (
@@ -66,7 +67,7 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
 
       <div className="lr-dp-chart">
         <div className="lr-dp-rowlabel">
-          <span className="lr-dp-icon">🍎</span> {t("carbs")}
+          <span className="lr-dp-icon"><AppleIcon /></span> {t("carbs")}
           <div className="lr-dp-unit">{t("gramsUnit")}</div>
         </div>
         <AutoWidth>
@@ -76,9 +77,9 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
 
       <div className="lr-dp-chart">
         <div className="lr-dp-rowlabel">
-          <span className="lr-dp-icon">✎</span> {t("rapidActingInsulin")}
+          <span className="lr-dp-icon"><RapidInsulinIcon /></span> {t("rapidActingInsulin")}
           <br />
-          <span className="lr-dp-icon">💉</span> {t("longActingInsulin")}
+          <span className="lr-dp-icon"><LongInsulinIcon /></span> {t("longActingInsulin")}
         </div>
         <AutoWidth>
           {(w) => <InsulinStrip ctx={ctx} width={w} />}

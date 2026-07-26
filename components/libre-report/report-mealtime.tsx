@@ -9,6 +9,7 @@ import { minutesOfDay } from "../../lib/libre-report/stats";
 import type { FoodEntry } from "../../lib/libre-report/types";
 import { MealPeriodChart } from "./charts";
 import type { ReportContext } from "./context";
+import { AppleIcon, DropIcon, MealPeriodIcon, RapidInsulinIcon } from "./icons";
 import { ReportPage } from "./report-header";
 
 interface MealPeriodDef {
@@ -72,7 +73,7 @@ export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactEl
           <div key={p.key} className="lr-meal-panel">
             <div className="lr-meal-panel-title">
               <span className="lr-meal-icon">
-                {p.key === "morning" ? "🌤" : p.key === "midday" ? "☀️" : p.key === "evening" ? "🌆" : "🌙"}
+                <MealPeriodIcon period={p.key} />
               </span>
               <b>{t(p.key)}</b>
               <span className="lr-meal-hours" dir="ltr">
@@ -89,10 +90,10 @@ export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactEl
               )}
             />
             <div className="lr-meal-cols">
-              <span title={t("glucoseReading")}>💧</span>
-              <span title={t("glucoseReading")}>💧</span>
-              <span title={t("rapidActingInsulin")}>✎</span>
-              <span title={t("carbs")}>🍎</span>
+              <span title={t("glucoseReading")}><DropIcon /></span>
+              <span title={t("glucoseReading")}><DropIcon /></span>
+              <span title={t("rapidActingInsulin")}><RapidInsulinIcon /></span>
+              <span title={t("carbs")}><AppleIcon /></span>
             </div>
           </div>
         ))}
@@ -134,7 +135,7 @@ export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactEl
           <i className="lr-swatch lr-swatch-scan" /> {t("glucoseReading")}
         </span>
         <span>▲ {t("glucoseAbove350", { v: formatGlucose(350, unit, lang) })}</span>
-        <span>✎ {t("rapidActingInsulin")}</span>
+        <span><RapidInsulinIcon /> {t("rapidActingInsulin")}</span>
       </div>
     </ReportPage>
   );

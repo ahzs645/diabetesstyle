@@ -9,6 +9,7 @@ import { minutesOfDay } from "../../lib/libre-report/stats";
 import { AutoWidth } from "./auto-width";
 import { DayChart } from "./charts";
 import type { ReportContext } from "./context";
+import { AppleIcon, ClockIcon, RapidInsulinIcon } from "./icons";
 import { ReportPage } from "./report-header";
 
 export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
@@ -99,10 +100,10 @@ export function DailyLogLegend({ ctx }: { ctx: ReportContext }): ReactElement {
       <span>
         <i className="lr-swatch lr-swatch-scan" /> {t("scansViews")}
       </span>
-      <span>🍎 {t("logged")}</span>
+      <span><AppleIcon /> <RapidInsulinIcon /> {t("logged")}</span>
       <span>▭ {t("postMealPeak")}</span>
       <span>● {t("newSensor")}</span>
-      <span>🕐 {t("timeChange")}</span>
+      <span><ClockIcon /> {t("timeChange")}</span>
       <span>* {t("stripTest")}</span>
       <span dir="ltr">{t("insulinFormula")}</span>
     </div>

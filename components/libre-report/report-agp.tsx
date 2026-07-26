@@ -106,9 +106,10 @@ export function AgpReport({ ctx }: { ctx: ReportContext }): ReactElement {
               <b>
                 {stats.gmiPercent === null
                   ? "—"
-                  : unit === "mmol/L"
-                    ? `${formatNumber(stats.gmiMmolMol!, lang)} ${t("mmolMol")}`
-                    : formatPct(stats.gmiPercent, lang, 1)}
+                  : `${formatPct(stats.gmiPercent, lang, 1)} ${t("orWord")} ${formatNumber(
+                      Math.round(stats.gmiMmolMol!),
+                      lang,
+                    )} ${t("mmolMol")}`}
               </b>
             </div>
             <div className="lr-stat-row lr-stat-strong">

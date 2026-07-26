@@ -206,6 +206,8 @@ const dict = {
   loadSample: { ar: "تحميل البيانات النموذجية", en: "Load sample data" },
   printReport: { ar: "طباعة التقرير", en: "Print report" },
   reportPeriod: { ar: "فترة التقرير", en: "Report period" },
+  customPeriod: { ar: "مخصص", en: "Custom" },
+  startDate: { ar: "تاريخ البدء", en: "Start date" },
   endDate: { ar: "تاريخ الانتهاء", en: "End date" },
   allReports: { ar: "كل التقارير", en: "All reports" },
   patient: { ar: "المريض", en: "Patient" },

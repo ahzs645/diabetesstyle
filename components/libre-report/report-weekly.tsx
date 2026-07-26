@@ -10,6 +10,13 @@ import {
 import { AutoWidth } from "./auto-width";
 import { DayChart } from "./charts";
 import type { ReportContext } from "./context";
+import {
+  ClockIcon,
+  LongInsulinIcon,
+  LowEventIcon,
+  RapidInsulinIcon,
+  SensorIcon,
+} from "./icons";
 import { ReportPage } from "./report-header";
 
 export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactElement {
@@ -46,7 +53,7 @@ export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactEleme
           </div>
           <div className="lr-weekly-cells">
             <div className="lr-weekly-cell">
-              <span className="lr-weekly-icon">📱</span>
+              <span className="lr-weekly-icon"><SensorIcon /></span>
               <b dir="ltr">
                 {day.averageGlucose === null ? "—" : formatGlucose(day.averageGlucose, unit, lang)}
               </b>
@@ -72,7 +79,7 @@ export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactEleme
               )}
             </div>
             <div className="lr-weekly-cell">
-              <span className="lr-weekly-icon lr-weekly-low-icon">⬇</span>
+              <span className="lr-weekly-icon lr-weekly-low-icon"><LowEventIcon /></span>
               <b dir="ltr">{day.lowEvents}</b>
             </div>
           </div>
@@ -84,9 +91,9 @@ export function WeeklySummaryReport({ ctx }: { ctx: ReportContext }): ReactEleme
           <i className="lr-swatch lr-swatch-scan" /> {t("scansViews")}
         </span>
         <span>● {t("newSensor")}</span>
-        <span>🕐 {t("timeChange")}</span>
-        <span>✎ {t("rapidActingInsulin")}</span>
-        <span>💉 {t("longActingInsulin")}</span>
+        <span><ClockIcon /> {t("timeChange")}</span>
+        <span><RapidInsulinIcon /> {t("rapidActingInsulin")}</span>
+        <span><LongInsulinIcon /> {t("longActingInsulin")}</span>
       </div>
     </ReportPage>
   );
