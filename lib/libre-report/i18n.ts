@@ -186,6 +186,10 @@ const dict = {
     en: "Based on {n} automatic readings over {d} days",
   },
   a1cEquationsTitle: { ar: "المعادلات", en: "The Equations" },
+  a1cMathTitle: {
+    ar: "كيف تُحسب هذه القيمة؟ (المعادلات والحساب)",
+    en: "How is this value calculated? (equations & math)",
+  },
   a1cEqAdagTitle: {
     ar: "من متوسط الجلوكوز إلى A1C المقدّر (معادلة ADAG)",
     en: "Mean glucose → estimated A1C (ADAG equation)",

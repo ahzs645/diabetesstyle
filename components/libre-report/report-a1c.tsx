@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { flushSync } from "react-dom";
 import {
   ADAG_OFFSET,
   ADAG_OFFSET_MMOL,
@@ -73,6 +74,25 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
   const { data, period, targets, lang, unit } = ctx;
   const unitLabel = glucoseUnitLabel(unit, lang);
   const [trailingDays, setTrailingDays] = useState(90);
+  // The equations/math live in a collapsed section so readers who only want
+  // the value and charts are not confronted with formulas.
+  const [mathOpen, setMathOpen] = useState(false);
+  const [printing, setPrinting] = useState(false);
+
+  // expand the math while printing so the printed report is complete
+  useEffect(() => {
+    // beforeprint fires synchronously ahead of print layout, so the state
+    // change must be flushed to the DOM inside the handler itself.
+    const onBefore = () => flushSync(() => setPrinting(true));
+    const onAfter = () => setPrinting(false);
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+    return () => {
+      window.removeEventListener("beforeprint", onBefore);
+      window.removeEventListener("afterprint", onAfter);
+    };
+  }, []);
+  const showMath = mathOpen || printing;
 
   const historic = useMemo(
     () => data.readings.filter((r) => r.historic),
@@ -149,63 +169,6 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
         )}
       </div>
 
-      {/* the equations */}
-      <h3 className="lr-section-rule">{t("a1cEquationsTitle")}</h3>
-      <div className="lr-eq-grid">
-        <div className="lr-eq-card">
-          <div className="lr-eq-title">{t("a1cEqAdagTitle")}</div>
-          <div className="lr-eq-formula" dir="ltr">
-            eA1C % = ({t("a1cMeanShort")} + {adagOffset}) ÷ {adagSlope}
-          </div>
-          <p className="lr-eq-note">{t("a1cEqAdagNote")}</p>
-        </div>
-        <div className="lr-eq-card">
-          <div className="lr-eq-title">{t("a1cEqIfccTitle")}</div>
-          <div className="lr-eq-formula" dir="ltr">
-            mmol/mol = {IFCC_SLOPE} × (A1C % − {IFCC_OFFSET})
-          </div>
-          <p className="lr-eq-note">{t("a1cEqIfccNote")}</p>
-        </div>
-        <div className="lr-eq-card">
-          <div className="lr-eq-title">(GMI) {t("gmi")}</div>
-          <div className="lr-eq-formula" dir="ltr">
-            GMI % = {GMI_INTERCEPT} + {unit === "mmol/L" ? nf(GMI_SLOPE * MGDL_PER_MMOL, 4) : GMI_SLOPE} × {t("a1cMeanShort")}
-          </div>
-          <p className="lr-eq-note">{t("a1cEqGmiNote")}</p>
-        </div>
-      </div>
-
-      {/* step-by-step with the loaded data */}
-      <h3 className="lr-section-rule">{t("a1cStepsTitle")}</h3>
-      {exact === null ? (
-        <p className="lr-a1c-nodata">{t("a1cNoData")}</p>
-      ) : (
-        <ol className="lr-a1c-steps">
-          <Step
-            index={1}
-            text={t("a1cStep1", {
-              n: formatInt(totals.n, lang),
-              s: formatInt(scanCount, lang),
-            })}
-          />
-          <Step
-            index={2}
-            text={t("a1cStep2")}
-            formula={`${t("a1cMeanShort")} = ${formatInt(toGlucoseUnit(totals.sum, unit), lang)} ÷ ${formatInt(totals.n, lang)} = ${meanShown} ${unitLabel}`}
-          />
-          <Step
-            index={3}
-            text={t("a1cStep3")}
-            formula={`eA1C = (${meanShown} + ${adagOffset}) ÷ ${adagSlope} = ${nf(exact, 2)} %`}
-          />
-          <Step
-            index={4}
-            text={t("a1cStep4")}
-            formula={`${nf(exact, 2)} % → ${nf(rounded!, 1)} %   |   ${IFCC_SLOPE} × (${nf(exact, 2)} − ${IFCC_OFFSET}) = ${nf(ngspToIfcc(exact), 1)} → ${formatInt(ifcc!, lang)} ${t("mmolMol")}`}
-          />
-        </ol>
-      )}
-
       {/* charts */}
       {totals.n > 0 ? (
         <>
@@ -262,6 +225,77 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
           </div>
         </>
       ) : null}
+
+      {/* the math, tucked away at the end for readers who want it */}
+      <section className="lr-a1c-math">
+        <button
+          type="button"
+          className="lr-a1c-math-toggle"
+          aria-expanded={showMath}
+          onClick={() => setMathOpen((open) => !open)}
+        >
+          <span className={"lr-a1c-math-chev" + (showMath ? " lr-a1c-math-chev-open" : "")} aria-hidden="true" />
+          {t("a1cMathTitle")}
+        </button>
+        {showMath ? (
+          <div className="lr-a1c-math-body">
+            <h3 className="lr-section-rule">{t("a1cEquationsTitle")}</h3>
+            <div className="lr-eq-grid">
+              <div className="lr-eq-card">
+                <div className="lr-eq-title">{t("a1cEqAdagTitle")}</div>
+                <div className="lr-eq-formula" dir="ltr">
+                  eA1C % = ({t("a1cMeanShort")} + {adagOffset}) ÷ {adagSlope}
+                </div>
+                <p className="lr-eq-note">{t("a1cEqAdagNote")}</p>
+              </div>
+              <div className="lr-eq-card">
+                <div className="lr-eq-title">{t("a1cEqIfccTitle")}</div>
+                <div className="lr-eq-formula" dir="ltr">
+                  mmol/mol = {IFCC_SLOPE} × (A1C % − {IFCC_OFFSET})
+                </div>
+                <p className="lr-eq-note">{t("a1cEqIfccNote")}</p>
+              </div>
+              <div className="lr-eq-card">
+                <div className="lr-eq-title">(GMI) {t("gmi")}</div>
+                <div className="lr-eq-formula" dir="ltr">
+                  GMI % = {GMI_INTERCEPT} + {unit === "mmol/L" ? nf(GMI_SLOPE * MGDL_PER_MMOL, 4) : GMI_SLOPE} × {t("a1cMeanShort")}
+                </div>
+                <p className="lr-eq-note">{t("a1cEqGmiNote")}</p>
+              </div>
+            </div>
+
+            <h3 className="lr-section-rule">{t("a1cStepsTitle")}</h3>
+            {exact === null ? (
+              <p className="lr-a1c-nodata">{t("a1cNoData")}</p>
+            ) : (
+              <ol className="lr-a1c-steps">
+                <Step
+                  index={1}
+                  text={t("a1cStep1", {
+                    n: formatInt(totals.n, lang),
+                    s: formatInt(scanCount, lang),
+                  })}
+                />
+                <Step
+                  index={2}
+                  text={t("a1cStep2")}
+                  formula={`${t("a1cMeanShort")} = ${formatInt(toGlucoseUnit(totals.sum, unit), lang)} ÷ ${formatInt(totals.n, lang)} = ${meanShown} ${unitLabel}`}
+                />
+                <Step
+                  index={3}
+                  text={t("a1cStep3")}
+                  formula={`eA1C = (${meanShown} + ${adagOffset}) ÷ ${adagSlope} = ${nf(exact, 2)} %`}
+                />
+                <Step
+                  index={4}
+                  text={t("a1cStep4")}
+                  formula={`${nf(exact, 2)} % → ${nf(rounded!, 1)} %   |   ${IFCC_SLOPE} × (${nf(exact, 2)} − ${IFCC_OFFSET}) = ${nf(ngspToIfcc(exact), 1)} → ${formatInt(ifcc!, lang)} ${t("mmolMol")}`}
+                />
+              </ol>
+            )}
+          </div>
+        ) : null}
+      </section>
 
       <div className="lr-footer-notes">
         <div>{t("gmiApprox")}</div>

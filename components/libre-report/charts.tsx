@@ -982,7 +982,7 @@ export function DailyMeanBarChart({
           bold={[targets.low, targets.high]}
           format={g}
         />
-        {dayLabelIndexes(daily.length).map((i) => (
+        {dayLabelIndexes(daily.length, width < 460 ? 4 : 6).map((i) => (
           <text
             key={i}
             x={i * slot + slot / 2}
@@ -1114,7 +1114,7 @@ export function Ea1cLineChart({
             </rect>
           ),
         )}
-        {dayLabelIndexes(points.length).map((i) => {
+        {dayLabelIndexes(points.length, width < 460 ? 4 : 6).map((i) => {
           const p = points[i];
           return p === null ? null : (
             <text key={i} x={x(i)} y={h + 12} fontSize={7.5} fill={LR_COLORS.axisText} textAnchor="middle">

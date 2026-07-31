@@ -1512,6 +1512,9 @@
   display: flex;
   gap: 10px;
   align-items: flex-start;
+  /* grid items refuse to shrink below content width by default, which lets
+     the nowrap formulas push the page wider than a phone screen */
+  min-width: 0;
 }
 .lr-a1c-step-num {
   flex: none;
@@ -1554,4 +1557,51 @@
   width: 100%;
   height: auto;
   display: block;
+}
+
+.lr-a1c-math {
+  margin-top: 16px;
+  border-top: 1px solid var(--lr-rule);
+}
+.lr-a1c-math-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--lr-blue);
+  text-align: start;
+}
+.lr-a1c-math-chev {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-block: 5px solid transparent;
+  border-inline-start: 6px solid currentColor;
+  transition: transform 0.15s ease;
+}
+.lr-a1c-math-chev-open {
+  transform: rotate(90deg);
+}
+/* .lr-root carries the language's dir; <html> is statically rtl */
+.lr-root[dir="rtl"] .lr-a1c-math-chev-open {
+  transform: rotate(-90deg);
+}
+.lr-a1c-math-body {
+  padding-bottom: 6px;
+}
+@media print {
+  .lr-a1c-math-toggle {
+    color: var(--lr-ink);
+    cursor: default;
+  }
+  .lr-a1c-math-chev {
+    display: none;
+  }
 }
