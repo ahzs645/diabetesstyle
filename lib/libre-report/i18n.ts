@@ -18,6 +18,7 @@ const dict = {
   mealtimePatterns: { ar: "أنماط أوقات الوجبات", en: "Mealtime Patterns" },
   dailyPatterns: { ar: "الأنماط اليومية", en: "Daily Patterns" },
   deviceDetails: { ar: "تفاصيل الجهاز", en: "Device Details" },
+  estimatedA1c: { ar: "A1C المقدّر", en: "Estimated A1C" },
   // shared
   days: { ar: "الأيام", en: "Days" },
   generated: { ar: "الإنشاء", en: "Generated" },
@@ -179,6 +180,80 @@ const dict = {
   // daily patterns
   dailyAverage: { ar: "المتوسط اليومي", en: "Daily Average" },
   gramsUnit: { ar: "جرام", en: "grams" },
+  // estimated A1C
+  a1cBasedOn: {
+    ar: "استنادًا إلى {n} قراءة تلقائية خلال {d} من الأيام",
+    en: "Based on {n} automatic readings over {d} days",
+  },
+  a1cEquationsTitle: { ar: "المعادلات", en: "The Equations" },
+  a1cEqAdagTitle: {
+    ar: "من متوسط الجلوكوز إلى A1C المقدّر (معادلة ADAG)",
+    en: "Mean glucose → estimated A1C (ADAG equation)",
+  },
+  a1cEqAdagNote: {
+    ar: "معادلة انحدار من دراسة ADAG (‏Nathan وآخرون، 2008) تربط متوسط الجلوكوز بقيمة A1C المخبرية. تستخدم القراءات التلقائية (كل 15 دقيقة) فقط — قراءات المسح اليدوية لا تدخل في الحساب.",
+    en: "A regression from the ADAG study (Nathan et al., 2008) linking mean glucose to laboratory A1C. Only automatic 15-minute readings are used — manual scans are excluded.",
+  },
+  a1cEqIfccTitle: {
+    ar: "التحويل إلى ملمول/مول (IFCC)",
+    en: "Conversion to mmol/mol (IFCC)",
+  },
+  a1cEqIfccNote: {
+    ar: "المعادلة الرئيسية للتحويل من نسبة NGSP المئوية إلى وحدات IFCC، وهي القيمة المعروضة بين قوسين في التطبيق.",
+    en: "The NGSP↔IFCC master equation converting the percentage into IFCC units — the value shown in parentheses in the app.",
+  },
+  a1cEqGmiNote: {
+    ar: "معادلة أحدث (‏Bergenstal وآخرون، 2018) تُستخدم في تقارير AGP بدلاً من A1C المقدّر، وتعطي نتيجة قريبة لكنها ليست مطابقة.",
+    en: "A newer regression (Bergenstal et al., 2018) used on AGP reports instead of estimated A1C; it gives a similar but not identical result.",
+  },
+  a1cStepsTitle: {
+    ar: "الحساب خطوة بخطوة على بياناتك",
+    en: "Step-by-step on your data",
+  },
+  a1cStep1: {
+    ar: "جمع القراءات: {n} قراءة تلقائية (كل 15 دقيقة) في الفترة المحددة؛ تُستبعد قراءات المسح ({s} قراءة).",
+    en: "Collect the readings: {n} automatic 15-minute readings in the selected period; the {s} manual scans are excluded.",
+  },
+  a1cStep2: {
+    ar: "حساب المتوسط الحسابي البسيط لكل القراءات:",
+    en: "Take the plain arithmetic mean of all those readings:",
+  },
+  a1cStep3: {
+    ar: "تطبيق معادلة ADAG على المتوسط:",
+    en: "Apply the ADAG equation to the mean:",
+  },
+  a1cStep4: {
+    ar: "التقريب إلى منزلة عشرية واحدة، ثم التحويل إلى وحدات IFCC وتقريبها إلى عدد صحيح:",
+    en: "Round to one decimal, then convert to IFCC units and round to a whole number:",
+  },
+  a1cNoData: {
+    ar: "لا توجد قراءات تلقائية في الفترة المحددة.",
+    en: "No automatic readings in the selected period.",
+  },
+  a1cChartDailyTitle: {
+    ar: "متوسط الجلوكوز اليومي في فترة التقرير",
+    en: "Daily average glucose over the report period",
+  },
+  a1cChartCumulativeTitle: {
+    ar: "كيف تتراكم القيمة عبر فترة التقرير",
+    en: "How the value builds up over the report period",
+  },
+  a1cChartCumulativeNote: {
+    ar: "كل نقطة تمثل A1C المقدّر المحسوب من جميع القراءات منذ بداية الفترة وحتى ذلك اليوم — أي القيمة التي كانت ستظهر لو توقفت البيانات عند ذلك اليوم.",
+    en: "Each point is the estimated A1C computed from every reading between the start of the period and that day — the value you would have seen if the data stopped there.",
+  },
+  a1cChartTrendTitle: {
+    ar: "تطور A1C المقدّر عبر مجموعة البيانات كاملة",
+    en: "Estimated A1C across the whole dataset",
+  },
+  a1cChartTrendNote: {
+    ar: "لكل يوم، A1C المقدّر من القراءات في النافذة المنتهية بذلك اليوم. المنطقة المظللة هي فترة التقرير المحددة.",
+    en: "For each day, the estimated A1C of the readings in the trailing window ending on that day. The shaded band is the selected report period.",
+  },
+  a1cTrailingWindow: { ar: "نافذة الحساب", en: "Rolling window" },
+  a1cReadingsUsed: { ar: "قراءة مستخدمة", en: "readings used" },
+  a1cMeanShort: { ar: "المتوسط", en: "Mean" },
+  a1cResultWord: { ar: "النتيجة", en: "Result" },
   // device details
   settings: { ar: "الإعدادات", en: "Settings" },
   devices: { ar: "الأجهزة", en: "Devices" },

@@ -1,6 +1,6 @@
 # DiabetesStyle
 
-A standalone React/Vite recreation of LibreView-style glucose reports. It accepts Arabic or English LibreView CSV exports, calculates report statistics in the browser, and renders nine printable report sections in Arabic or English.
+A standalone React/Vite recreation of LibreView-style glucose reports. It accepts Arabic or English LibreView CSV exports, calculates report statistics in the browser, and renders ten printable report sections in Arabic or English — including an Estimated A1C explainer that walks through the ADAG/GMI equations step by step on the loaded data and charts the value's progression through the dataset.
 
 ## Privacy
 

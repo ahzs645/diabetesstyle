@@ -1430,3 +1430,128 @@
     padding-top: 0;
   }
 }
+
+/* ---------------- Estimated A1C report ---------------- */
+
+.lr-a1c-hero {
+  text-align: center;
+  padding: 22px 12px 18px;
+}
+.lr-a1c-hero-value {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--lr-ink);
+}
+.lr-a1c-hero-pct {
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--lr-muted);
+  vertical-align: 0.4em;
+  margin-inline-end: 4px;
+}
+.lr-a1c-hero-ifcc {
+  margin-top: 8px;
+  font-size: 1.1rem;
+  color: var(--lr-ink);
+}
+.lr-a1c-hero-caption {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--lr-muted);
+}
+.lr-a1c-nodata {
+  color: var(--lr-muted);
+  font-size: 0.85rem;
+}
+
+.lr-eq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.lr-eq-card {
+  border: 1px solid var(--lr-rule);
+  border-radius: 6px;
+  background: #fafafa;
+  padding: 10px 12px;
+}
+.lr-eq-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.lr-eq-formula {
+  font-family: ui-monospace, "SF Mono", Consolas, Menlo, monospace;
+  direction: ltr;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  padding: 7px 8px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.lr-eq-note {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: var(--lr-muted);
+  line-height: 1.6;
+}
+
+.lr-a1c-steps {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.lr-a1c-step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.lr-a1c-step-num {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--lr-blue);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+.lr-a1c-step-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.lr-a1c-step-body .lr-eq-formula {
+  margin-top: 6px;
+}
+
+.lr-a1c-trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lr-a1c-window {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--lr-muted);
+}
+.lr-a1c-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
