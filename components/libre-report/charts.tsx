@@ -1,11 +1,14 @@
 import type { CSSProperties, ReactElement } from "react";
+import type { A1cPoint, DailyMean } from "../../lib/libre-report/a1c";
 import type { AgpProfile, GlucoseTargets, LowGlucoseEvent } from "../../lib/libre-report/stats";
 import { minutesOfDay } from "../../lib/libre-report/stats";
 import type { GlucoseReading } from "../../lib/libre-report/types";
 import type { GlucoseUnit, ReportLang } from "../../lib/libre-report/i18n";
 import { GlyphApple, GlyphSyringe } from "./icons";
 import {
+  formatDayMonth,
   formatDurationOfDay,
+  formatFullDate,
   formatGlucose,
   formatNumber,
   formatPct,
@@ -905,6 +908,220 @@ export function MealPeriodChart({
             {rel === -60 ? (lang === "ar" ? "1- ساعة" : "-1hr") : lang === "ar" ? `${rel / 60}+ ساعة` : `+${rel / 60}hr`}
           </text>
         ))}
+      </g>
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Estimated-A1C charts                                                */
+/* ------------------------------------------------------------------ */
+
+/** ~6 evenly spaced x-axis label indexes for a day-indexed series. */
+function dayLabelIndexes(count: number, maxLabels = 6): number[] {
+  if (count <= maxLabels) return [...Array(count).keys()];
+  const step = Math.ceil(count / (maxLabels - 1));
+  const out: number[] = [];
+  for (let i = 0; i < count - step / 2; i += step) out.push(i);
+  out.push(count - 1);
+  return out;
+}
+
+export function DailyMeanBarChart({
+  daily,
+  targets,
+  lang,
+  unit,
+  width = 700,
+  height = 190,
+}: {
+  daily: DailyMean[];
+  targets: GlucoseTargets;
+  lang: ReportLang;
+  unit: GlucoseUnit;
+  width?: number;
+  height?: number;
+}): ReactElement {
+  const t = makeT(lang);
+  const margin = { left: 34, right: 8, top: 8, bottom: 18 };
+  const w = width - margin.left - margin.right;
+  const h = height - margin.top - margin.bottom;
+  const maxMean = Math.max(targets.high, ...daily.map((d) => d.meanMgdl ?? 0));
+  const yMax = Math.ceil((maxMean * 1.15) / 50) * 50;
+  const y = (v: number) => yForGlucose(v, yMax, h);
+  const g = (mgdl: number) => formatGlucose(mgdl, unit, lang);
+  const slot = w / daily.length;
+  const barW = Math.max(1, Math.min(16, slot * 0.7));
+  const colorFor = (v: number) =>
+    v < targets.low ? LR_COLORS.low : v <= targets.high ? LR_COLORS.target : LR_COLORS.high;
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="lr-a1c-chart" role="img" aria-label={t("a1cChartDailyTitle")}>
+      <g transform={`translate(${margin.left},${margin.top})`}>
+        <rect x={0} y={0} width={w} height={h} fill="#ffffff" stroke={LR_COLORS.gridLine} strokeWidth={0.7} />
+        <rect x={0} y={y(targets.high)} width={w} height={y(targets.low) - y(targets.high)} fill={LR_COLORS.targetBand} />
+        {daily.map((d, i) =>
+          d.meanMgdl === null ? null : (
+            <rect
+              key={i}
+              x={i * slot + (slot - barW) / 2}
+              y={y(d.meanMgdl)}
+              width={barW}
+              height={h - y(d.meanMgdl)}
+              fill={colorFor(d.meanMgdl)}
+              opacity={0.85}
+            >
+              <title>{`${formatFullDate(d.day, lang)} — ${g(d.meanMgdl)} ${glucoseUnitLabel(unit, lang)} (${d.n})`}</title>
+            </rect>
+          ),
+        )}
+        <GlucoseTicks
+          ticks={[0, targets.low, targets.high, yMax]}
+          yMax={yMax}
+          height={h}
+          x={-4}
+          bold={[targets.low, targets.high]}
+          format={g}
+        />
+        {dayLabelIndexes(daily.length, width < 460 ? 4 : 6).map((i) => (
+          <text
+            key={i}
+            x={i * slot + slot / 2}
+            y={h + 12}
+            fontSize={7.5}
+            fill={LR_COLORS.axisText}
+            textAnchor="middle"
+          >
+            {formatDayMonth(daily[i].day, lang)}
+          </text>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * eA1C-over-time line: one slot per calendar day, gaps where a slot has no
+ * data. Used both for the cumulative build-up within the report period and
+ * for the rolling-window trend across the whole dataset.
+ */
+export function Ea1cLineChart({
+  points,
+  lang,
+  width = 700,
+  height = 200,
+  highlight,
+  goalPct = 7,
+}: {
+  points: (A1cPoint | null)[];
+  lang: ReportLang;
+  width?: number;
+  height?: number;
+  /** Inclusive day-index range to shade (e.g. the selected report period). */
+  highlight?: { from: number; to: number };
+  /** Dashed reference line (GMI/A1C goal), drawn when inside the scale. */
+  goalPct?: number;
+}): ReactElement {
+  const t = makeT(lang);
+  const margin = { left: 34, right: 30, top: 8, bottom: 18 };
+  const w = width - margin.left - margin.right;
+  const h = height - margin.top - margin.bottom;
+  const values = points.filter((p): p is A1cPoint => p !== null).map((p) => p.ea1cPercent);
+  if (values.length === 0) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} className="lr-a1c-chart" role="img">
+        <text x={width / 2} y={height / 2} fontSize={9} textAnchor="middle" fill={LR_COLORS.axisText}>
+          {t("noData")}
+        </text>
+      </svg>
+    );
+  }
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  const pad = Math.max(0.15, (hi - lo) * 0.2);
+  lo -= pad;
+  hi += pad;
+  const step = [0.1, 0.2, 0.25, 0.5, 1, 2].find((s) => (hi - lo) / s <= 6) ?? 5;
+  const ticks: number[] = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
+    ticks.push(Math.round(v * 100) / 100);
+  }
+  const x = (i: number) => (points.length === 1 ? w / 2 : (i / (points.length - 1)) * w);
+  const y = (v: number) => h - ((v - lo) / (hi - lo)) * h;
+  // line path with gaps at null slots
+  let d = "";
+  let prevNull = true;
+  points.forEach((p, i) => {
+    if (p === null) {
+      prevNull = true;
+      return;
+    }
+    d += `${prevNull ? "M" : "L"}${x(i).toFixed(1)},${y(p.ea1cPercent).toFixed(1)}`;
+    prevNull = false;
+  });
+  let lastIdx = points.length - 1;
+  while (lastIdx >= 0 && points[lastIdx] === null) lastIdx--;
+  const last = points[lastIdx] as A1cPoint;
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="lr-a1c-chart" role="img">
+      <g transform={`translate(${margin.left},${margin.top})`}>
+        <rect x={0} y={0} width={w} height={h} fill="#ffffff" stroke={LR_COLORS.gridLine} strokeWidth={0.7} />
+        {highlight ? (
+          <rect
+            x={x(highlight.from)}
+            y={0}
+            width={Math.max(1.5, x(highlight.to) - x(highlight.from))}
+            height={h}
+            fill="#dcecf7"
+          />
+        ) : null}
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line x1={0} y1={y(tick)} x2={w} y2={y(tick)} stroke={LR_COLORS.gridLine} strokeWidth={0.6} strokeDasharray="2,3" />
+            <text x={-4} y={y(tick) + 2.5} fontSize={7.5} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
+              {formatPct(tick, lang, step < 0.25 ? 2 : 1)}
+            </text>
+          </g>
+        ))}
+        {goalPct > lo && goalPct < hi ? (
+          <line x1={0} y1={y(goalPct)} x2={w} y2={y(goalPct)} stroke={LR_COLORS.high} strokeWidth={1} strokeDasharray="5,3" />
+        ) : null}
+        <path d={d} fill="none" stroke={LR_COLORS.median} strokeWidth={1.8} />
+        <circle cx={x(lastIdx)} cy={y(last.ea1cPercent)} r={2.6} fill={LR_COLORS.median} />
+        <text
+          x={x(lastIdx) + 4}
+          y={y(last.ea1cPercent) - 5}
+          fontSize={8.5}
+          fontWeight={700}
+          fill={LR_COLORS.median}
+          direction="ltr"
+        >
+          {formatPct(last.ea1cPercent, lang, 1)}
+        </text>
+        {/* hover: one transparent column per day with a native tooltip */}
+        {points.map((p, i) =>
+          p === null ? null : (
+            <rect
+              key={i}
+              x={x(i) - (w / points.length) / 2}
+              y={0}
+              width={Math.max(1, w / points.length)}
+              height={h}
+              fill="transparent"
+            >
+              <title>
+                {`${formatFullDate(p.day, lang)} — ${formatPct(p.ea1cPercent, lang, 2)} (${t("a1cMeanShort")} ${formatNumber(p.meanMgdl, lang)} · ${p.n} ${t("a1cReadingsUsed")})`}
+              </title>
+            </rect>
+          ),
+        )}
+        {dayLabelIndexes(points.length, width < 460 ? 4 : 6).map((i) => {
+          const p = points[i];
+          return p === null ? null : (
+            <text key={i} x={x(i)} y={h + 12} fontSize={7.5} fill={LR_COLORS.axisText} textAnchor="middle">
+              {formatDayMonth(p.day, lang)}
+            </text>
+          );
+        })}
       </g>
     </svg>
   );

@@ -27,6 +27,7 @@ import { MonthlySummaryReport } from "../../components/libre-report/report-month
 import { MealtimePatternsReport } from "../../components/libre-report/report-mealtime";
 import { DailyPatternsReport } from "../../components/libre-report/report-daily-patterns";
 import { DeviceDetailsReport } from "../../components/libre-report/report-device";
+import { EstimatedA1cReport } from "../../components/libre-report/report-a1c";
 import {
   DateField,
   formatDisplayDate,
@@ -45,6 +46,7 @@ const REPORTS: { id: string; label: LabelKey }[] = [
   { id: "monthly-summary", label: "monthlySummary" },
   { id: "mealtime-patterns", label: "mealtimePatterns" },
   { id: "daily-patterns", label: "dailyPatterns" },
+  { id: "estimated-a1c", label: "estimatedA1c" },
   { id: "device-details", label: "deviceDetails" },
 ];
 
@@ -423,6 +425,7 @@ export default function LibreReportPage() {
           {show("monthly-summary") ? <MonthlySummaryReport ctx={ctx} /> : null}
           {show("mealtime-patterns") ? <MealtimePatternsReport ctx={ctx} /> : null}
           {show("daily-patterns") ? <DailyPatternsReport ctx={ctx} /> : null}
+          {show("estimated-a1c") ? <EstimatedA1cReport ctx={ctx} /> : null}
           {show("device-details") ? <DeviceDetailsReport ctx={ctx} /> : null}
         </main>
       ) : null}
