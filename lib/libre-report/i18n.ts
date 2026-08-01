@@ -316,9 +316,14 @@ const dict = {
     ar: "{d} من {t} يومًا · {p} من القراءات المتوقعة",
     en: "{d} of {t} days · {p} of expected readings",
   },
+  /**
+   * Worded to match the caveat the LibreLink app prints under its own
+   * Estimated A1C ("مدى البيانات 7 من 90 أيام"), so the two line up when
+   * they are read side by side.
+   */
   a1cCoverageWarn: {
-    ar: "تستند هذه القيمة إلى {p} فقط من القراءات المتوقعة للفترة ({d} من {t} يومًا فيها بيانات).",
-    en: "This value rests on just {p} of the readings expected for the period ({d} of {t} days carry data).",
+    ar: "مدى البيانات {d} من {t} أيام — تستند هذه القيمة إلى {p} من القراءات المتوقعة للفترة.",
+    en: "Data range {d} of {t} days — this value rests on {p} of the readings expected for the period.",
   },
   // device details
   settings: { ar: "الإعدادات", en: "Settings" },

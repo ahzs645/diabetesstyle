@@ -3,6 +3,7 @@ import { ea1cPercent } from "./a1c";
 import {
   datasetBounds,
   filterBySource,
+  LOW_COVERAGE_PCT,
   mergedWindow,
   shortSerial,
   sourceDayMask,
@@ -119,6 +120,49 @@ describe("merged vs per-source windows", () => {
     expect(w.meanMgdl).toBeNull();
     expect(w.ea1cPercent).toBeNull();
     expect(w.dayCoveragePct).toBe(0);
+  });
+});
+
+describe("reconstructing an app screen", () => {
+  /**
+   * The shape the LibreLink app reports under its own caveat line: a 90-day
+   * heading over an instance that only has the last handful of days. Both
+   * observed screens had this form, one at 6 of 90 days and one at 7 of 90.
+   */
+  const fresh = exportOf([
+    ...dayReadings("OLD-1111", 1, 120, 96),
+    ...Array.from({ length: 7 }, (_, i) => dayReadings("NEW-2222", 25 + i, 112, 76)).flat(),
+  ]);
+  const ninety = makePeriod(new Date(2026, 6, 31), 90);
+
+  it("counts days the way the app's caveat does", () => {
+    const w = sourceWindow(fresh, "NEW-2222", ninety);
+    expect(w.daysWithData).toBe(7);
+    expect(w.daysClaimed).toBe(90);
+  });
+
+  it("flags the fresh instance but not the merged window", () => {
+    expect(sourceWindow(fresh, "NEW-2222", ninety).dayCoveragePct).toBeLessThan(
+      LOW_COVERAGE_PCT,
+    );
+    // the merged export still only has 8 days here, so build a full one
+    const full = exportOf(
+      Array.from({ length: 90 }, (_, i) => dayReadings("OLD-1111", 1, 120, 96).map((r) => ({
+        ...r,
+        time: new Date(2026, 4, 3 + i, r.time.getHours()),
+      }))).flat(),
+    );
+    expect(mergedWindow(full, ninety).dayCoveragePct).toBeGreaterThanOrEqual(
+      LOW_COVERAGE_PCT,
+    );
+  });
+
+  it("still reports a confident-looking estimate from the thin slice", () => {
+    // this is the whole problem: the number itself looks ordinary
+    const w = sourceWindow(fresh, "NEW-2222", ninety);
+    expect(w.meanMgdl).toBeCloseTo(112);
+    expect(Math.round(w.ea1cPercent! * 10) / 10).toBeCloseTo(5.5);
+    expect(Math.round(w.ifccMmolMol!)).toBe(37);
   });
 });
 

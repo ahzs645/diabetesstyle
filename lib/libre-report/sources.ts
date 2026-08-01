@@ -28,6 +28,12 @@ export const READINGS_PER_DAY = 96;
  * Coverage below this share of the claimed window makes a period average
  * unrepresentative. LibreView's own reports use a comparable rule of thumb
  * for whether a period has enough sensor data to report on.
+ *
+ * Measured in DAYS, not readings: the LibreLink app's own caveat under the
+ * Estimated A1C counts days ("مدى البيانات 7 من 90 أيام" — data range 7 of
+ * 90 days), and days are what the artifact is about, a window claiming
+ * calendar time it has no data for. Judging by readings instead would nag
+ * about ordinary sensor gaps, which is a different problem.
  */
 export const LOW_COVERAGE_PCT = 70;
 

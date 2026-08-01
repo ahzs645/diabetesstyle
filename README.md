@@ -24,8 +24,11 @@ Two features make that visible:
   whole report set renders exactly what that phone could have produced. A
   banner marks the reports while it is on, and it stays on printouts.
 
-The Estimated A1C report also carries a coverage caveat whenever the readings
-behind the value fill less than 70% of the period they are labelled with.
+The Estimated A1C report also carries a coverage caveat whenever the value is
+backed by less than 70% of the days it is labelled with. It is worded and
+measured to match the caveat the LibreLink app prints under its own Estimated
+A1C — "مدى البيانات 7 من 90 أيام" / "Data range 7 of 90 days" — so the two can
+be read side by side, with the share of expected readings added after it.
 
 ## Privacy
 

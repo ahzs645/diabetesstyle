@@ -170,7 +170,7 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
             <div className="lr-a1c-hero-caption">
               {t("a1cBasedOn", { n: formatInt(totals.n, lang), d: period.days })}
             </div>
-            {coverage.readingCoveragePct < LOW_COVERAGE_PCT ? (
+            {coverage.dayCoveragePct < LOW_COVERAGE_PCT ? (
               <div className="lr-a1c-coverage">
                 {t("a1cCoverageWarn", {
                   p: formatPct(coverage.readingCoveragePct, lang, 0),
