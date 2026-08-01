@@ -293,6 +293,19 @@ const dict = {
     ar: "يغطي هذا المصدر {d} من {t} يومًا في الفترة المحددة، أي {p} من القراءات المتوقعة. المتوسط المحسوب منه وحده لا يمثل الفترة المكتوبة في العنوان.",
     en: "This source covers {d} of {t} days in the selected period — {p} of the expected readings. An average from it alone does not represent the window its heading claims.",
   },
+  // app screen reconstruction
+  reconTitle: { ar: "إعادة بناء شاشة التطبيق", en: "App screen reconstruction" },
+  reconNote: {
+    ar: "يضع التطبيق عنوان فترة بطول {n} يومًا ينتهي باليوم الذي تفتحه فيه، ثم يحسب من بياناته المحلية وحدها. لذلك يلزم لإعادة بناء لقطة شاشة أمران: النسخة، واليوم الذي نُظر فيه إلى الشاشة. غيّر التاريخ في أي صف ليطابق لقطتك.",
+    en: "The app heads the screen with a {n}-day window ending on the day you open it, then computes from its own local data alone. Reproducing a screenshot therefore takes two things: the instance, and the day it was looked at. Change the date on any row to match your screenshot.",
+  },
+  reconColHeading: { ar: "عنوان الفترة", en: "Header" },
+  reconColInstance: { ar: "النسخة", en: "Instance" },
+  reconColDays: { ar: "مدى البيانات", en: "Days it had" },
+  reconColShows: { ar: "المعروض", en: "Shows" },
+  reconColMerged: { ar: "بينما الملف المدمج", en: "Merged export says" },
+  reconSince: { ar: "منذ {d}", en: "from {d}" },
+  reconDaysOf: { ar: "{d} من {t}", en: "{d} of {t}" },
   srcHandoverTitle: { ar: "تبديل المصدر", en: "Source handover" },
   srcHandoverNote: {
     ar: "آخر قراءة من {a} بتاريخ {da}، وأول قراءة من {b} بتاريخ {db}. القراءات التي تسبق هذا التبديل لم تكن موجودة على الجهاز الجديد.",

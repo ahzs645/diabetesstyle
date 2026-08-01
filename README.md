@@ -19,6 +19,13 @@ Two features make that visible:
   dataset, and a table giving the merged value for the selected period next to
   the value each source alone would have shown, with how much of the period it
   actually covers. Sources backing less than 70% of the period are flagged.
+- **App screen reconstruction** — one row per instance rebuilding the Estimated
+  A1C screen it would have shown: the heading it printed, the days it actually
+  had, the value it displayed, and what the merged export says for the same
+  window. A screen is pinned by two independent things — which instance, and
+  the day it was opened — and the day is not derivable from the export, so each
+  row carries its own editable date (defaulting to that instance's last day of
+  data). Set it to the day a screenshot was taken to rebuild that screenshot.
 - **Separate-source mode** — the toolbar's *Source* picker (shown only when an
   export has more than one) narrows every report to a single instance, so the
   whole report set renders exactly what that phone could have produced. A

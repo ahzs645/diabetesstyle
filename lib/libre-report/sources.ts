@@ -1,5 +1,5 @@
 import { ea1cPercent, ngspToIfcc } from "./a1c";
-import { dayKey, startOfDay, type ReportPeriod } from "./stats";
+import { dayKey, makePeriod, startOfDay, type ReportPeriod } from "./stats";
 import type { GlucoseReading, LibreExport } from "./types";
 
 /**
@@ -222,6 +222,39 @@ export function sourceWindows(
   period: ReportPeriod,
 ): SourceWindow[] {
   return summarizeSources(data).map((s) => sourceWindow(data, s.serial, period));
+}
+
+/** One reconstructed app screen: the heading it printed and what it showed. */
+export interface ScreenReconstruction {
+  /** The window the app would head the screen with. */
+  period: ReportPeriod;
+  /** What that one instance had, and therefore displayed. */
+  source: SourceWindow;
+  /** What the merged export supports for the same window. */
+  merged: SourceWindow;
+}
+
+/**
+ * Rebuild the Estimated A1C screen one instance would have shown had you
+ * opened it on `asOfDay`.
+ *
+ * The app heads the screen with a window of `days` ending that day and then
+ * averages whatever of it happens to be in its own database — so the heading
+ * and the data behind it are independent, and reproducing an observed screen
+ * needs both the instance and the day it was looked at.
+ */
+export function reconstructScreen(
+  data: LibreExport,
+  serial: string,
+  asOfDay: Date,
+  days: number,
+): ScreenReconstruction {
+  const period = makePeriod(asOfDay, days);
+  return {
+    period,
+    source: sourceWindow(data, serial, period),
+    merged: mergedWindow(data, period),
+  };
 }
 
 /**

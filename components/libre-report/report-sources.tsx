@@ -1,8 +1,9 @@
-import { useMemo, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import {
   formatFullDate,
   formatNumber,
   formatPct,
+  formatPeriod,
   glucoseUnitLabel,
   makeT,
   toGlucoseUnit,
@@ -11,6 +12,7 @@ import {
   datasetBounds,
   LOW_COVERAGE_PCT,
   mergedWindow,
+  reconstructScreen,
   sourceDayMask,
   sourceWindow,
   summarizeSources,
@@ -19,9 +21,16 @@ import {
 import { AutoWidth } from "./auto-width";
 import { SourceTimelineChart, type SourceTimelineRow } from "./charts";
 import type { ReportContext } from "./context";
+import { DateField, toIsoDate } from "./controls";
 import { ReportPage } from "./report-header";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** ISO "yyyy-mm-dd" -> local Date, or null. */
+function parseIsoLocal(iso: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
 
 /**
  * Data Sources report: which app instance recorded what, and what each one
@@ -35,6 +44,12 @@ export function SourcesReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const { fullData, period, lang, unit, activeSource, onSelectSource } = ctx;
   const unitLabel = glucoseUnitLabel(unit, lang);
 
+  // Per-instance "as of" day for the screen reconstruction below. A screen is
+  // pinned by TWO things — which instance, and the day it was opened — and
+  // the day is not derivable, so it stays editable. Defaults to the last day
+  // that instance recorded anything.
+  const [asOf, setAsOf] = useState<Record<string, string>>({});
+
   const sources = useMemo(() => summarizeSources(fullData), [fullData]);
   const merged = useMemo(() => mergedWindow(fullData, period), [fullData, period]);
   const windows = useMemo(
@@ -43,6 +58,11 @@ export function SourcesReport({ ctx }: { ctx: ReportContext }): ReactElement {
   );
 
   const bounds = useMemo(() => datasetBounds(fullData), [fullData]);
+  // the reconstruction calendars never go outside the data that exists
+  const dataMaxIso = useMemo(() => {
+    const last = fullData.readings.at(-1)?.time;
+    return last ? toIsoDate(last) : undefined;
+  }, [fullData]);
   const timeline: SourceTimelineRow[] = useMemo(() => {
     if (!bounds) return [];
     return sources.map((s) => ({
@@ -205,6 +225,86 @@ export function SourcesReport({ ctx }: { ctx: ReportContext }): ReactElement {
         {windows.every((w) => w.n === 0) ? (
           <p className="lr-eq-note">{t("srcNoReadings")}</p>
         ) : null}
+      </div>
+
+      {/* The payoff: each instance's own Estimated A1C screen, on a day you
+          choose. Rebuilding an observed screenshot means matching both the
+          instance and the day it was opened. */}
+      <div className="lr-box">
+        <h3 className="lr-box-title">{t("reconTitle")}</h3>
+        <p className="lr-eq-note">{t("reconNote", { n: period.days })}</p>
+        <table className="lr-src-table lr-recon-table">
+          <thead>
+            <tr>
+              <th scope="col">{t("reconColInstance")}</th>
+              <th scope="col">{t("reconColHeading")}</th>
+              <th scope="col">{t("reconColDays")}</th>
+              <th scope="col">{t("reconColShows")}</th>
+              <th scope="col">{t("reconColMerged")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((s) => {
+              const iso = asOf[s.serial] ?? toIsoDate(s.last);
+              const day = parseIsoLocal(iso) ?? s.last;
+              const scr = reconstructScreen(fullData, s.serial, day, period.days);
+              return (
+                <tr key={s.serial}>
+                  <th scope="row">
+                    <span className="lr-src-name" dir="ltr">
+                      {s.short}
+                    </span>
+                    <span className="lr-recon-since">
+                      {t("reconSince", { d: formatFullDate(s.first, lang) })}
+                    </span>
+                  </th>
+                  <td className="lr-recon-headcell" data-label={t("reconColHeading")}>
+                    <span className="lr-recon-window">
+                      {formatPeriod(
+                        scr.period.start,
+                        scr.period.end,
+                        scr.period.days,
+                        lang,
+                      )}
+                    </span>
+                    <span className="lr-recon-date lr-noprint">
+                      <DateField
+                        value={iso}
+                        onChange={(v) =>
+                          setAsOf((prev) => ({ ...prev, [s.serial]: v }))
+                        }
+                        lang={lang}
+                        ariaLabel={`${t("reconColHeading")} — ${s.short}`}
+                        min={bounds ? toIsoDate(bounds.start) : undefined}
+                        max={dataMaxIso}
+                      />
+                    </span>
+                  </td>
+                  <td data-label={t("reconColDays")}>
+                    <span
+                      className={
+                        scr.source.dayCoveragePct < LOW_COVERAGE_PCT
+                          ? "lr-src-cov-low"
+                          : undefined
+                      }
+                    >
+                      {t("reconDaysOf", {
+                        d: scr.source.daysWithData,
+                        t: scr.source.daysClaimed,
+                      })}
+                    </span>
+                  </td>
+                  <td className="lr-src-a1c" data-label={t("reconColShows")}>
+                    <span dir="ltr">{a1cText(scr.source)}</span>
+                  </td>
+                  <td data-label={t("reconColMerged")}>
+                    <span dir="ltr">{a1cText(scr.merged)}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {lowCoverage.length > 0 ? (

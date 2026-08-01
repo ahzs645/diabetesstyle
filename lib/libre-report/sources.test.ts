@@ -5,6 +5,7 @@ import {
   filterBySource,
   LOW_COVERAGE_PCT,
   mergedWindow,
+  reconstructScreen,
   shortSerial,
   sourceDayMask,
   sourceWindow,
@@ -14,10 +15,14 @@ import {
 import { makePeriod } from "./stats";
 import type { GlucoseReading, LibreExport } from "./types";
 
-/** One historic reading per hour of `day` (2026-07-DD) at a fixed value. */
+/**
+ * `count` historic readings on 15-minute slots from midnight of `day`
+ * (2026-07-DD) at a fixed value. Slots rather than hours so a full day's 96
+ * readings stay inside the one calendar day, as the real export does.
+ */
 function dayReadings(serial: string, day: number, mgdl: number, count = 4): GlucoseReading[] {
   return Array.from({ length: count }, (_, i) => ({
-    time: new Date(2026, 6, day, 6 + i),
+    time: new Date(2026, 6, day, 0, i * 15),
     serial,
     mgdl,
     historic: true,
@@ -71,7 +76,7 @@ describe("summarizeSources", () => {
     expect(sources[0].historicCount).toBe(32);
     expect(sources[0].daysWithData).toBe(8);
     expect(sources[1].daysWithData).toBe(2);
-    expect(sources[1].first).toEqual(new Date(2026, 6, 9, 6));
+    expect(sources[1].first).toEqual(new Date(2026, 6, 9));
   });
 
   it("shortens serials to something a table can show", () => {
@@ -163,6 +168,23 @@ describe("reconstructing an app screen", () => {
     expect(w.meanMgdl).toBeCloseTo(112);
     expect(Math.round(w.ea1cPercent! * 10) / 10).toBeCloseTo(5.5);
     expect(Math.round(w.ifccMmolMol!)).toBe(37);
+  });
+
+  it("derives the heading a screen opened on a given day would carry", () => {
+    // opening it on 31 July heads the screen "3 May – 31 July"
+    const scr = reconstructScreen(fresh, "NEW-2222", new Date(2026, 6, 31), 90);
+    expect(scr.period.start).toEqual(new Date(2026, 4, 3));
+    expect(scr.period.end).toEqual(new Date(2026, 7, 1));
+    expect(scr.source.daysWithData).toBe(7);
+    // the merged export also holds the older instance's day inside that window
+    expect(scr.merged.daysWithData).toBe(8);
+  });
+
+  it("moves with the day the screen was opened", () => {
+    const earlier = reconstructScreen(fresh, "NEW-2222", new Date(2026, 6, 28), 90);
+    expect(earlier.period.end).toEqual(new Date(2026, 6, 29));
+    // only 25-28 July had happened yet
+    expect(earlier.source.daysWithData).toBe(4);
   });
 });
 

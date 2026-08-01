@@ -1902,3 +1902,45 @@
   font-size: 0.74rem;
   line-height: 1.6;
 }
+
+/* screen reconstruction table */
+.lr-recon-since {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: var(--lr-muted);
+}
+.lr-recon-window {
+  display: block;
+}
+.lr-recon-date {
+  display: block;
+  margin-top: 4px;
+}
+.lr-recon-date .lr-date-inputwrap {
+  width: 8.6rem;
+}
+/* This table is deliberately not wrapped in .lr-hscroll — the row date
+   pickers open a popover that an overflow container would clip. It inherits
+   .lr-src-table, including the stacked-card layout on phones. */
+@media (max-width: 760px) {
+  /* the heading cell carries a long date range plus its own picker, so it
+     stacks rather than sitting on one line opposite its label */
+  .lr-recon-table .lr-recon-headcell {
+    display: block;
+  }
+  .lr-recon-table .lr-recon-headcell::before {
+    display: block;
+    margin-bottom: 2px;
+  }
+  .lr-recon-date .lr-date-inputwrap {
+    width: 100%;
+  }
+}
+@media print {
+  /* the printed report keeps the date in the heading text, not as a control */
+  .lr-recon-date {
+    display: none;
+  }
+}
