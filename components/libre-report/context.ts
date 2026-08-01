@@ -10,7 +10,19 @@ import type { LibreExport } from "../../lib/libre-report/types";
 
 /** Everything a report section needs to render. */
 export interface ReportContext {
+  /**
+   * The export the reports render. In separate-source mode this is narrowed
+   * to a single app instance, so every statistic reflects what that one
+   * instance could have produced.
+   */
   data: LibreExport;
+  /** The whole uploaded export, never narrowed — the Data Sources report
+   * compares sources against each other and needs all of them. */
+  fullData: LibreExport;
+  /** Serial the reports are narrowed to, or null when sources are merged. */
+  activeSource: string | null;
+  /** Switch separate-source mode from inside a report. */
+  onSelectSource?: (serial: string | null) => void;
   period: ReportPeriod;
   stats: PeriodStats;
   days: DayStats[];

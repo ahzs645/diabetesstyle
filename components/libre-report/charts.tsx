@@ -1126,3 +1126,139 @@ export function Ea1cLineChart({
     </svg>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Source coverage timeline                                            */
+/* ------------------------------------------------------------------ */
+
+export interface SourceTimelineRow {
+  label: string;
+  /** One flag per day from `startDay`: did this source record that day? */
+  days: boolean[];
+}
+
+/**
+ * One lane per data source across the whole dataset, a tick for every day
+ * that source recorded. Read together with the shaded report period it shows
+ * at a glance which instance could — and could not — have backed a value.
+ */
+export function SourceTimelineChart({
+  rows,
+  startDay,
+  lang,
+  width = 700,
+  highlight,
+}: {
+  rows: SourceTimelineRow[];
+  /** Calendar day the first column represents. */
+  startDay: Date;
+  lang: ReportLang;
+  width?: number;
+  /** Inclusive day-index range to shade (the selected report period). */
+  highlight?: { from: number; to: number };
+}): ReactElement {
+  const t = makeT(lang);
+  const dayCount = Math.max(1, ...rows.map((r) => r.days.length));
+  const laneH = 18;
+  const laneGap = 6;
+  // right margin leaves room for the last date label, which is centred on
+  // the final column and would otherwise be clipped by the viewBox
+  const margin = { left: 74, right: 30, top: 6, bottom: 18 };
+  const w = Math.max(40, width - margin.left - margin.right);
+  const h = rows.length * laneH + Math.max(0, rows.length - 1) * laneGap;
+  const height = h + margin.top + margin.bottom;
+  const colW = w / dayCount;
+  const x = (i: number) => (i / dayCount) * w;
+  const dayAt = (i: number) => {
+    const d = new Date(startDay);
+    d.setDate(d.getDate() + i);
+    return d;
+  };
+
+  if (rows.length === 0) {
+    return (
+      <svg viewBox={`0 0 ${width} 40`} className="lr-src-timeline" role="img">
+        <text x={width / 2} y={22} fontSize={9} textAnchor="middle" fill={LR_COLORS.axisText}>
+          {t("noData")}
+        </text>
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="lr-src-timeline" role="img">
+      <g transform={`translate(${margin.left},${margin.top})`}>
+        {/* Painted in three passes so the period band reads across every
+            lane: empty lanes first, the band over them, then the data on
+            top. A single pass would either bury the band under the opaque
+            lane backgrounds or let it wash out the data. */}
+        {rows.map((row, ri) => (
+          <rect
+            key={`lane-${row.label}`}
+            x={0}
+            y={ri * (laneH + laneGap)}
+            width={w}
+            height={laneH}
+            fill="#f4f4f4"
+            stroke={LR_COLORS.gridLine}
+            strokeWidth={0.6}
+          />
+        ))}
+        {highlight ? (
+          <rect
+            x={x(highlight.from)}
+            y={-2}
+            width={Math.max(1.5, x(highlight.to + 1) - x(highlight.from))}
+            height={h + 4}
+            fill="#dcecf7"
+          />
+        ) : null}
+        {rows.map((row, ri) => {
+          const y = ri * (laneH + laneGap);
+          return (
+            <g key={row.label}>
+              {row.days.map((has, i) =>
+                has ? (
+                  <rect
+                    key={i}
+                    x={x(i)}
+                    y={y + 1}
+                    width={Math.max(0.6, colW)}
+                    height={laneH - 2}
+                    fill={LR_COLORS.median}
+                  >
+                    <title>{`${row.label} — ${formatFullDate(dayAt(i), lang)}`}</title>
+                  </rect>
+                ) : null,
+              )}
+              <text
+                x={-6}
+                y={y + laneH / 2 + 3}
+                fontSize={8}
+                fill={LR_COLORS.ink}
+                textAnchor="end"
+                direction="ltr"
+              >
+                {row.label}
+              </text>
+            </g>
+          );
+        })}
+        {/* centred anchors throughout: `end`/`start` swap meaning under the
+            page's RTL direction and clip the outer labels */}
+        {[0, Math.floor(dayCount / 2), dayCount - 1].map((i, k) => (
+          <text
+            key={k}
+            x={x(i) + colW / 2}
+            y={h + 12}
+            fontSize={7.5}
+            fill={LR_COLORS.axisText}
+            textAnchor="middle"
+          >
+            {formatDayMonth(dayAt(i), lang)}
+          </text>
+        ))}
+      </g>
+    </svg>
+  );
+}

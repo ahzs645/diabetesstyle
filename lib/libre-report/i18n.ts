@@ -258,6 +258,68 @@ const dict = {
   a1cReadingsUsed: { ar: "قراءة مستخدمة", en: "readings used" },
   a1cMeanShort: { ar: "المتوسط", en: "Mean" },
   a1cResultWord: { ar: "النتيجة", en: "Result" },
+  // data sources / separate-source mode
+  dataSources: { ar: "مصادر البيانات", en: "Data Sources" },
+  source: { ar: "المصدر", en: "Source" },
+  allSources: { ar: "كل المصادر (مدمجة)", en: "All sources (merged)" },
+  srcExplainer: {
+    ar: "يدمج ملف LibreView كل نسخة من التطبيق رفعت بيانات إلى الحساب: هاتف جديد أو إعادة تثبيت أو قارئ ثانٍ يظهر كرقم تسلسلي مستقل. أما تطبيق LibreLink على الهاتف فيحسب شاشاته من قاعدة بياناته المحلية وحدها، فقد يعرض قيمة تختلف كثيرًا عن الملف المدمج بينما يحمل عنوان الفترة نفسها.",
+    en: "A LibreView export merges every app instance that ever uploaded to the account: a new phone, a reinstall or a second reader each appear as their own serial number. The LibreLink app on a phone computes its screens from its own local database only, so it can show a value far from the merged export while still being headed with the same report period.",
+  },
+  srcTimelineTitle: {
+    ar: "تغطية كل مصدر عبر مجموعة البيانات",
+    en: "Coverage of each source across the dataset",
+  },
+  srcTimelineNote: {
+    ar: "كل شريط يمثل مصدرًا واحدًا، والأيام الملونة هي الأيام التي سجّل فيها قراءات تلقائية. المنطقة المظللة هي فترة التقرير المحددة.",
+    en: "Each bar is one source; coloured days are days it recorded automatic readings. The shaded band is the selected report period.",
+  },
+  srcTableTitle: {
+    ar: "ما يعرضه كل مصدر للفترة المحددة",
+    en: "What each source shows for the selected period",
+  },
+  srcTableNote: {
+    ar: "الصف الأول هو القيمة المدمجة التي تدعمها بيانات الملف. كل صف بعده هو القيمة التي كان ذلك المصدر وحده سيعرضها للفترة نفسها.",
+    en: "The first row is the merged value the export supports. Each row below is the value that source alone would have shown for the same period.",
+  },
+  srcMergedLabel: { ar: "كل المصادر", en: "All sources" },
+  srcColSpan: { ar: "أول وآخر قراءة", en: "First and last reading" },
+  srcColDays: { ar: "أيام فيها بيانات", en: "Days with data" },
+  srcColReadings: { ar: "القراءات التلقائية", en: "Automatic readings" },
+  srcColCoverage: { ar: "تغطية الفترة", en: "Period coverage" },
+  srcVsMerged: { ar: "الفرق عن المدمج", en: "vs merged" },
+  srcLowCoverage: { ar: "تغطية منخفضة", en: "Low coverage" },
+  srcLowCoverageNote: {
+    ar: "يغطي هذا المصدر {d} من {t} يومًا في الفترة المحددة، أي {p} من القراءات المتوقعة. المتوسط المحسوب منه وحده لا يمثل الفترة المكتوبة في العنوان.",
+    en: "This source covers {d} of {t} days in the selected period — {p} of the expected readings. An average from it alone does not represent the window its heading claims.",
+  },
+  srcHandoverTitle: { ar: "تبديل المصدر", en: "Source handover" },
+  srcHandoverNote: {
+    ar: "آخر قراءة من {a} بتاريخ {da}، وأول قراءة من {b} بتاريخ {db}. القراءات التي تسبق هذا التبديل لم تكن موجودة على الجهاز الجديد.",
+    en: "Last reading from {a} on {da}, first reading from {b} on {db}. Nothing before that handover existed on the new instance.",
+  },
+  srcSingle: {
+    ar: "يحتوي هذا الملف على مصدر واحد، لذلك تتطابق قيمة التطبيق مع القيمة المدمجة.",
+    en: "This export contains a single source, so the app value and the merged value agree.",
+  },
+  srcFilterBanner: {
+    ar: "وضع المصدر المنفصل: كل التقارير تعرض بيانات المصدر {s} وحده.",
+    en: "Separate-source mode: every report shows data from source {s} only.",
+  },
+  srcShowOnly: { ar: "عرض هذا المصدر وحده", en: "Show this source alone" },
+  srcShowAll: { ar: "العودة إلى كل المصادر", en: "Back to all sources" },
+  srcNoReadings: {
+    ar: "لا توجد قراءات تلقائية من هذا المصدر في الفترة المحددة.",
+    en: "No automatic readings from this source in the selected period.",
+  },
+  srcCoverageOfPeriod: {
+    ar: "{d} من {t} يومًا · {p} من القراءات المتوقعة",
+    en: "{d} of {t} days · {p} of expected readings",
+  },
+  a1cCoverageWarn: {
+    ar: "تستند هذه القيمة إلى {p} فقط من القراءات المتوقعة للفترة ({d} من {t} يومًا فيها بيانات).",
+    en: "This value rests on just {p} of the readings expected for the period ({d} of {t} days carry data).",
+  },
   // device details
   settings: { ar: "الإعدادات", en: "Settings" },
   devices: { ar: "الأجهزة", en: "Devices" },

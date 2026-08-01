@@ -18,12 +18,14 @@ import {
 } from "../../lib/libre-report/a1c";
 import {
   formatNumber,
+  formatPct,
   glucoseUnitLabel,
   makeT,
   MGDL_PER_MMOL,
   toGlucoseUnit,
   type ReportLang,
 } from "../../lib/libre-report/i18n";
+import { LOW_COVERAGE_PCT, mergedWindow } from "../../lib/libre-report/sources";
 import { readingsInPeriod, startOfDay } from "../../lib/libre-report/stats";
 import { AutoWidth } from "./auto-width";
 import { DailyMeanBarChart, Ea1cLineChart } from "./charts";
@@ -100,6 +102,9 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
   );
   const scanCount = readingsInPeriod(data, period).filter((r) => !r.historic).length;
   const totals = useMemo(() => periodTotals(historic, period), [historic, period]);
+  // How much of the claimed window actually carries readings. A mean over a
+  // thin slice still renders as a confident number, so say when it is one.
+  const coverage = useMemo(() => mergedWindow(data, period), [data, period]);
 
   // full-dataset daily series (for the rolling-window trend chart)
   const datasetDaily = useMemo(() => {
@@ -165,6 +170,15 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
             <div className="lr-a1c-hero-caption">
               {t("a1cBasedOn", { n: formatInt(totals.n, lang), d: period.days })}
             </div>
+            {coverage.readingCoveragePct < LOW_COVERAGE_PCT ? (
+              <div className="lr-a1c-coverage">
+                {t("a1cCoverageWarn", {
+                  p: formatPct(coverage.readingCoveragePct, lang, 0),
+                  d: coverage.daysWithData,
+                  t: coverage.daysClaimed,
+                })}
+              </div>
+            ) : null}
           </>
         )}
       </div>

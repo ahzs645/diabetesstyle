@@ -131,11 +131,14 @@
   box-shadow: 0 18px 60px rgb(20 40 55 / 20%);
 }
 
-/* ---------------- toolbar ---------------- */
+/* ---------------- toolbar ----------------
+   Two rows: identity + actions on top, report controls below. Keeping the
+   actions out of the wrapping control row stops "Print" and the language
+   toggle from landing in a different place every time a label changes
+   length (they move between Arabic and English otherwise). */
 .lr-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: end;
+  flex-direction: column;
   gap: 10px;
   padding: 10px 12px;
   margin-bottom: 14px;
@@ -143,18 +146,46 @@
   border-radius: 8px;
   background: #ffffff;
 }
+.lr-toolbar-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .lr-toolbar-brand {
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--lr-blue);
-  margin-inline-end: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lr-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  margin-inline-start: auto;
+  flex: none;
+}
+.lr-toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #edeff1;
 }
 .lr-tool {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   font-size: 0.72rem;
   color: var(--lr-muted);
+  min-width: 0;
+}
+.lr-tool > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .lr-tool select,
 .lr-tool input {
@@ -193,6 +224,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* border-box so `width: 100%` in the phone grid stays inside its column
+     instead of adding padding and border on top of it */
+  box-sizing: border-box;
   border: 1px solid var(--lr-rule);
   border-radius: 5px;
   padding: 4px 8px;
@@ -270,7 +304,10 @@
   min-width: 0;
   border: none;
   background: transparent;
-  padding: 4px 0 4px 8px;
+  /* logical padding: the text is forced dir="ltr" but the field still sits
+     in an RTL toolbar, so the gap belongs on the inline-start side */
+  padding-block: 4px;
+  padding-inline: 8px 0;
   font-size: 0.8rem;
   font-family: inherit;
   color: var(--lr-ink);
@@ -418,12 +455,19 @@
 .lr-file-btn input {
   position: absolute;
   inset: 0;
+  /* border-box matters: a file input carries a default border, so a plain
+     width:100% renders wider than its label and pushes the whole toolbar
+     past the viewport on a phone */
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   opacity: 0;
   cursor: pointer;
 }
 .lr-file-name {
+  flex: 1;
+  min-width: 0;
+  text-align: start;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1315,14 +1359,34 @@
     padding: 12px 12px 16px;
   }
 
-  /* toolbar: two-per-row controls instead of a cramped single line */
+  /* Toolbar on a phone: a strict two-column grid rather than flex-wrap, so
+     controls line up in even rows instead of leaving a ragged short field
+     at the end of each line. Fields get finger-sized targets and the date
+     inputs get 16px text, below which iOS zooms the whole page on focus. */
+  .lr-toolbar {
+    padding: 10px;
+    gap: 8px;
+  }
   .lr-toolbar-brand {
-    flex-basis: 100%;
-    margin-inline-end: 0;
+    font-size: 1.05rem;
+  }
+  .lr-toolbar-actions {
+    gap: 6px;
+  }
+  .lr-toolbar-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 8px;
+    padding-top: 8px;
   }
   .lr-tool {
-    flex: 1 1 42%;
     min-width: 0;
+  }
+  .lr-tool-wide {
+    grid-column: 1 / -1;
+  }
+  .lr-tool > span {
+    font-size: 0.7rem;
   }
   .lr-tool select,
   .lr-tool input,
@@ -1331,11 +1395,106 @@
     width: 100%;
     min-width: 0;
   }
+  .lr-toolbar .lr-field-btn {
+    min-height: 38px;
+    font-size: 0.85rem;
+  }
+  /* the date wrapper deliberately has no padding — its input supplies it,
+     so widen the input rather than the box around it */
+  .lr-toolbar .lr-select-btn,
+  .lr-toolbar .lr-file-btn {
+    padding-inline: 10px;
+  }
+  .lr-date-input {
+    font-size: 16px;
+    padding-inline: 10px 0;
+  }
+  .lr-date-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
   .lr-file-btn {
     max-width: none;
   }
-  .lr-btn {
-    flex: 1 1 auto;
+  .lr-toolbar .lr-btn {
+    min-height: 38px;
+    padding-inline: 14px;
+  }
+  /* the calendar must never hang off the side of a narrow screen */
+  .lr-datefield .lr-popover {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* report tabs: bigger touch targets, no rubber-banding the page */
+  .lr-tabs {
+    overscroll-behavior-x: contain;
+  }
+  .lr-tab {
+    padding: 9px 14px;
+  }
+
+  .lr-src-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  /* The source comparison is the point of this report, and its payload
+     columns (estimated A1C, coverage) are the last ones — behind a
+     horizontal scroll nobody performs. Stack each row into a labelled card
+     instead so every figure is on screen. */
+  .lr-src-table,
+  .lr-src-table tbody,
+  .lr-src-table tr,
+  .lr-src-table tbody th,
+  .lr-src-table td {
+    display: block;
+  }
+  .lr-src-table thead {
+    display: none;
+  }
+  .lr-src-table tr {
+    border: 1px solid var(--lr-rule);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  .lr-src-table tbody th,
+  .lr-src-table td {
+    border: none;
+    padding: 2px 0;
+    white-space: normal;
+  }
+  .lr-src-table tbody th {
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #eceff1;
+  }
+  .lr-src-table td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .lr-src-table td::before {
+    content: attr(data-label);
+    flex: none;
+    color: var(--lr-muted);
+    font-size: 0.68rem;
+  }
+  .lr-src-row-merged th,
+  .lr-src-row-merged td {
+    border-block-end-width: 0;
+  }
+  .lr-src-row-merged {
+    border-color: #b9c6cf;
+    border-width: 2px;
+  }
+  .lr-src-delta {
+    display: inline;
+    margin-inline-start: 6px;
   }
 
   /* page header: patient block drops below the title instead of squeezing it */
@@ -1604,4 +1763,142 @@
   .lr-a1c-math-chev {
     display: none;
   }
+}
+
+/* ---------------- data sources / separate-source mode ---------------- */
+
+/* Banner stays in print: a printed report built from one app instance has
+   to say so, or it reads as the whole account. Only the button is dropped. */
+.lr-src-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid #cfe0ec;
+  border-inline-start: 4px solid var(--lr-blue);
+  border-radius: 6px;
+  background: #f2f8fc;
+  color: #17435f;
+  font-size: 0.82rem;
+}
+.lr-src-banner span {
+  flex: 1;
+  min-width: 0;
+}
+
+.lr-src-explainer {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: #445;
+}
+.lr-src-single {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  color: var(--lr-muted);
+}
+
+.lr-src-timeline {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lr-src-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+}
+.lr-src-table th,
+.lr-src-table td {
+  border: 1px solid var(--lr-rule);
+  padding: 6px 8px;
+  text-align: start;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.lr-src-table thead th {
+  background: #f4f7f9;
+  font-size: 0.7rem;
+  color: var(--lr-muted);
+  font-weight: 700;
+}
+.lr-src-table tbody th {
+  font-weight: 700;
+}
+.lr-src-row-merged {
+  background: #fbfcfd;
+}
+.lr-src-row-merged th,
+.lr-src-row-merged td {
+  border-block-end-width: 2px;
+  border-block-end-color: #b9c6cf;
+}
+.lr-src-row-active {
+  background: #f2f8fc;
+  box-shadow: inset 3px 0 0 var(--lr-blue);
+}
+.lr-root[dir="rtl"] .lr-src-row-active {
+  box-shadow: inset -3px 0 0 var(--lr-blue);
+}
+.lr-src-name {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.lr-src-pick {
+  display: block;
+  margin-top: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--lr-blue);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.lr-src-a1c {
+  font-weight: 700;
+}
+.lr-src-delta {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: #a4581a;
+}
+.lr-src-cov-low {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fdecea;
+  color: #8b1a10;
+  font-weight: 700;
+}
+
+.lr-src-warnbox {
+  border-inline-start: 4px solid #e0a33a;
+}
+.lr-src-warnlist {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: #445;
+}
+.lr-src-warnlist li + li {
+  margin-top: 5px;
+}
+
+/* coverage caveat under the big estimated-A1C number */
+.lr-a1c-coverage {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #fdecea;
+  color: #8b1a10;
+  font-size: 0.74rem;
+  line-height: 1.6;
 }

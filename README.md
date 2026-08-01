@@ -1,6 +1,31 @@
 # DiabetesStyle
 
-A standalone React/Vite recreation of LibreView-style glucose reports. It accepts Arabic or English LibreView CSV exports, calculates report statistics in the browser, and renders ten printable report sections in Arabic or English — including an Estimated A1C explainer that walks through the ADAG/GMI equations step by step on the loaded data and charts the value's progression through the dataset.
+A standalone React/Vite recreation of LibreView-style glucose reports. It accepts Arabic or English LibreView CSV exports, calculates report statistics in the browser, and renders eleven printable report sections in Arabic or English — including an Estimated A1C explainer that walks through the ADAG/GMI equations step by step on the loaded data and charts the value's progression through the dataset.
+
+## Data sources and separate-source mode
+
+A LibreView account merges every app instance that ever uploaded to it: a new
+phone, an app reinstall or a second reader each appear under their own serial
+number. The LibreLink app on a phone is different — it computes its screens
+from its own local database, so a freshly set-up instance averages only the
+few days it has while still heading the report with the nominal window ("last
+90 days"). The number on the phone then cannot be reproduced from the merged
+export, and it looks like a glycemic change when it is really a change of
+phone.
+
+Two features make that visible:
+
+- **Data Sources report** — a coverage timeline of every source across the
+  dataset, and a table giving the merged value for the selected period next to
+  the value each source alone would have shown, with how much of the period it
+  actually covers. Sources backing less than 70% of the period are flagged.
+- **Separate-source mode** — the toolbar's *Source* picker (shown only when an
+  export has more than one) narrows every report to a single instance, so the
+  whole report set renders exactly what that phone could have produced. A
+  banner marks the reports while it is on, and it stays on printouts.
+
+The Estimated A1C report also carries a coverage caveat whenever the readings
+behind the value fill less than 70% of the period they are labelled with.
 
 ## Privacy
 

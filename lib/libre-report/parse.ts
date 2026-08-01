@@ -124,32 +124,34 @@ export function parseLibreExport(text: string): LibreExport {
     const type = toNumber(cols[3]);
     if (type === null) continue;
 
+    const serial = (cols[1] ?? "").trim();
     if (cols[0]) devices.add(cols[0].trim());
-    if (cols[1]) serials.add(cols[1].trim());
+    if (serial) serials.add(serial);
 
     switch (type) {
       case RECORD_TYPE.historicGlucose: {
         const v = toNumber(cols[4]);
-        if (v !== null) readings.push({ time, mgdl: v * factor, historic: true });
+        if (v !== null) readings.push({ time, serial, mgdl: v * factor, historic: true });
         break;
       }
       case RECORD_TYPE.scanGlucose: {
         const v = toNumber(cols[5]);
-        if (v !== null) readings.push({ time, mgdl: v * factor, historic: false });
+        if (v !== null) readings.push({ time, serial, mgdl: v * factor, historic: false });
         break;
       }
       case RECORD_TYPE.stripGlucose: {
         const v = toNumber(cols[14]);
-        if (v !== null) strips.push({ time, mgdl: v * factor });
+        if (v !== null) strips.push({ time, serial, mgdl: v * factor });
         break;
       }
       case RECORD_TYPE.insulin: {
-        pushInsulin(insulin, time, cols);
+        pushInsulin(insulin, time, serial, cols);
         break;
       }
       case RECORD_TYPE.food: {
         food.push({
           time,
+          serial,
           grams: toNumber(cols[9]),
           servings: toNumber(cols[10]),
           nonNumeric: toNumber(cols[8]) !== null,
@@ -157,7 +159,7 @@ export function parseLibreExport(text: string): LibreExport {
         break;
       }
       case RECORD_TYPE.deviceEvent: {
-        deviceEvents.push({ time });
+        deviceEvents.push({ time, serial });
         break;
       }
       default:
@@ -165,7 +167,7 @@ export function parseLibreExport(text: string): LibreExport {
     }
 
     const noteText = (cols[13] ?? "").trim();
-    if (noteText) notes.push({ time, text: noteText });
+    if (noteText) notes.push({ time, serial, text: noteText });
   }
 
   readings.sort((a, b) => a.time.getTime() - b.time.getTime());
@@ -186,7 +188,12 @@ export function parseLibreExport(text: string): LibreExport {
   };
 }
 
-function pushInsulin(out: InsulinEntry[], time: Date, cols: string[]): void {
+function pushInsulin(
+  out: InsulinEntry[],
+  time: Date,
+  serial: string,
+  cols: string[],
+): void {
   const rapidUnits = toNumber(cols[7]);
   const longUnits = toNumber(cols[12]);
   const mealUnits = toNumber(cols[16]);
@@ -198,6 +205,7 @@ function pushInsulin(out: InsulinEntry[], time: Date, cols: string[]): void {
   if (rapidUnits !== null || nonNumericRapid) {
     out.push({
       time,
+      serial,
       units: rapidUnits,
       kind: "rapid",
       nonNumeric: nonNumericRapid && rapidUnits === null,
@@ -206,19 +214,20 @@ function pushInsulin(out: InsulinEntry[], time: Date, cols: string[]): void {
   if (longUnits !== null || nonNumericLong) {
     out.push({
       time,
+      serial,
       units: longUnits,
       kind: "long",
       nonNumeric: nonNumericLong && longUnits === null,
     });
   }
   if (mealUnits !== null) {
-    out.push({ time, units: mealUnits, kind: "meal", nonNumeric: false });
+    out.push({ time, serial, units: mealUnits, kind: "meal", nonNumeric: false });
   }
   if (correctionUnits !== null) {
-    out.push({ time, units: correctionUnits, kind: "correction", nonNumeric: false });
+    out.push({ time, serial, units: correctionUnits, kind: "correction", nonNumeric: false });
   }
   if (userChangeUnits !== null) {
-    out.push({ time, units: userChangeUnits, kind: "userChange", nonNumeric: false });
+    out.push({ time, serial, units: userChangeUnits, kind: "userChange", nonNumeric: false });
   }
   if (
     rapidUnits === null &&
@@ -229,6 +238,6 @@ function pushInsulin(out: InsulinEntry[], time: Date, cols: string[]): void {
     !nonNumericRapid &&
     !nonNumericLong
   ) {
-    out.push({ time, units: null, kind: "unknown", nonNumeric: true });
+    out.push({ time, serial, units: null, kind: "unknown", nonNumeric: true });
   }
 }
