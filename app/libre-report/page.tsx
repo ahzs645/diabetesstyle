@@ -28,6 +28,12 @@ import { MealtimePatternsReport } from "../../components/libre-report/report-mea
 import { DailyPatternsReport } from "../../components/libre-report/report-daily-patterns";
 import { DeviceDetailsReport } from "../../components/libre-report/report-device";
 import { EstimatedA1cReport } from "../../components/libre-report/report-a1c";
+import { SourcesReport } from "../../components/libre-report/report-sources";
+import {
+  filterBySource,
+  shortSerial,
+  summarizeSources,
+} from "../../lib/libre-report/sources";
 import {
   DateField,
   formatDisplayDate,
@@ -47,6 +53,7 @@ const REPORTS: { id: string; label: LabelKey }[] = [
   { id: "mealtime-patterns", label: "mealtimePatterns" },
   { id: "daily-patterns", label: "dailyPatterns" },
   { id: "estimated-a1c", label: "estimatedA1c" },
+  { id: "data-sources", label: "dataSources" },
   { id: "device-details", label: "deviceDetails" },
 ];
 
@@ -89,12 +96,15 @@ export default function LibreReportPage() {
   const [fileName, setFileName] = useState<string>("");
   const [csvUrl, setCsvUrl] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
+  // Separate-source mode: serial the reports are narrowed to, null = merged.
+  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
 
   const t = makeT(lang);
 
   const applyData = useCallback((parsed: LibreExport) => {
     setData(parsed);
     setError(null);
+    setSourceFilter(null);
     const first = parsed.readings[0]?.time;
     const last = parsed.readings.at(-1)?.time;
     if (first && last) {
@@ -105,12 +115,22 @@ export default function LibreReportPage() {
     }
   }, []);
 
-  // first/last day with readings: the calendars never go outside these
+  // first/last day with readings: the calendars never go outside these.
+  // Always from the whole export — narrowing to one source must not shrink
+  // the range you are allowed to ask about.
   const dataBounds = useMemo(() => {
     const first = data?.readings[0]?.time;
     const last = data?.readings.at(-1)?.time;
     return first && last ? { min: toIsoDate(first), max: toIsoDate(last) } : null;
   }, [data]);
+
+  const sources = useMemo(() => (data ? summarizeSources(data) : []), [data]);
+
+  // What the reports actually render: the whole export, or one source of it
+  const viewData = useMemo(
+    () => (data && sourceFilter ? filterBySource(data, sourceFilter) : data),
+    [data, sourceFilter],
+  );
 
   const days =
     startDate && endDate ? spanDays(startDate, endDate) : DEFAULT_PERIOD_DAYS;
@@ -210,16 +230,19 @@ export default function LibreReportPage() {
   }, [onUpload]);
 
   const ctx: ReportContext | null = useMemo(() => {
-    if (!data || !startDate || !endDate) return null;
+    if (!data || !viewData || !startDate || !endDate) return null;
     const [y, m, d] = endDate.split("-").map(Number);
     const period = makePeriod(new Date(y, m - 1, d), spanDays(startDate, endDate));
-    const stats = computePeriodStats(data, period, DEFAULT_TARGETS);
-    const historic = readingsInPeriod(data, period).filter((r) => r.historic);
+    const stats = computePeriodStats(viewData, period, DEFAULT_TARGETS);
+    const historic = readingsInPeriod(viewData, period).filter((r) => r.historic);
     return {
-      data,
+      data: viewData,
+      fullData: data,
+      activeSource: sourceFilter,
+      onSelectSource: setSourceFilter,
       period,
       stats,
-      days: computeDayStats(data, period, DEFAULT_TARGETS),
+      days: computeDayStats(viewData, period, DEFAULT_TARGETS),
       agp: computeAgpProfile(historic),
       targets: DEFAULT_TARGETS,
       lang,
@@ -228,14 +251,39 @@ export default function LibreReportPage() {
       patientDob: SHOW_DOB ? formatDisplayDate(patientDob) || "—" : "",
       generatedAt: formatFullDate(new Date(), lang),
     };
-  }, [data, startDate, endDate, lang, unit, patientDob]);
+  }, [data, viewData, sourceFilter, startDate, endDate, lang, unit, patientDob]);
 
   const show = (id: string) => selectedReport === "all" || selectedReport === id;
 
   return (
     <div className="lr-root" dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
+      {/* Toolbar: identity + actions on top, report controls below. The
+          controls only mean anything once an export is loaded, so before
+          that the row is not rendered at all. */}
       <div className="lr-toolbar lr-noprint">
-        <div className="lr-toolbar-brand">{t("appTitle")}</div>
+        <div className="lr-toolbar-head">
+          <div className="lr-toolbar-brand">{t("appTitle")}</div>
+          <div className="lr-toolbar-actions">
+            {data ? (
+              <button
+                type="button"
+                className="lr-btn lr-btn-primary"
+                onClick={() => window.print()}
+              >
+                {t("printReport")}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="lr-btn"
+              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+            >
+              {lang === "ar" ? "English" : "العربية"}
+            </button>
+          </div>
+        </div>
+        {data ? (
+        <div className="lr-toolbar-controls">
         <div className="lr-tool">
           <span>{t("reportPeriod")}</span>
           <Select
@@ -311,9 +359,23 @@ export default function LibreReportPage() {
             />
           </div>
         ) : null}
-        <div className="lr-tool lr-upload">
+        {sources.length > 1 ? (
+          <div className="lr-tool lr-tool-wide">
+            <span>{t("source")}</span>
+            <Select
+              value={sourceFilter ?? "all"}
+              options={[
+                { value: "all", label: t("allSources") },
+                ...sources.map((s) => ({ value: s.serial, label: s.short })),
+              ]}
+              onChange={(v) => setSourceFilter(v === "all" ? null : v)}
+              ariaLabel={t("source")}
+            />
+          </div>
+        ) : null}
+        <div className="lr-tool lr-tool-wide lr-upload">
           <span>{t("uploadCsv")}</span>
-          <label className="lr-field-btn lr-file-btn">
+          <label className="lr-field-btn lr-file-btn" title={fileName || undefined}>
             <span className="lr-file-name">
               {fileName || (lang === "ar" ? "اختيار ملف…" : "Choose file…")}
             </span>
@@ -327,17 +389,22 @@ export default function LibreReportPage() {
             />
           </label>
         </div>
-        <button type="button" className="lr-btn lr-btn-primary" onClick={() => window.print()}>
-          {t("printReport")}
-        </button>
-        <button
-          type="button"
-          className="lr-btn"
-          onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-        >
-          {lang === "ar" ? "English" : "العربية"}
-        </button>
+        </div>
+        ) : null}
       </div>
+
+      {ctx && sourceFilter ? (
+        <div className="lr-src-banner">
+          <span>{t("srcFilterBanner", { s: shortSerial(sourceFilter) })}</span>
+          <button
+            type="button"
+            className="lr-btn lr-noprint"
+            onClick={() => setSourceFilter(null)}
+          >
+            {t("srcShowAll")}
+          </button>
+        </div>
+      ) : null}
 
       {error ? <div className="lr-error">{error}</div> : null}
       {loading ? <div className="lr-loading">…</div> : null}
@@ -426,6 +493,7 @@ export default function LibreReportPage() {
           {show("mealtime-patterns") ? <MealtimePatternsReport ctx={ctx} /> : null}
           {show("daily-patterns") ? <DailyPatternsReport ctx={ctx} /> : null}
           {show("estimated-a1c") ? <EstimatedA1cReport ctx={ctx} /> : null}
+          {show("data-sources") ? <SourcesReport ctx={ctx} /> : null}
           {show("device-details") ? <DeviceDetailsReport ctx={ctx} /> : null}
         </main>
       ) : null}

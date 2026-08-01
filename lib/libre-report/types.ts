@@ -25,7 +25,19 @@ export const RECORD_TYPE = {
   deviceEvent: 6,
 } as const;
 
-export interface GlucoseReading {
+/**
+ * Serial number of the app instance / reader that recorded an entry.
+ *
+ * A LibreView account merges every instance that ever uploaded to it, so a
+ * new phone, an app reinstall or a second reader each show up as a distinct
+ * serial. The serial is what lets a report be split back apart — see
+ * `lib/libre-report/sources.ts`.
+ */
+export interface SourcedEntry {
+  serial: string;
+}
+
+export interface GlucoseReading extends SourcedEntry {
   /** Timestamp in local device time (minutes precision). */
   time: Date;
   /** Glucose value in mg/dL (converted if the export is mmol/L). */
@@ -34,7 +46,7 @@ export interface GlucoseReading {
   historic: boolean;
 }
 
-export interface InsulinEntry {
+export interface InsulinEntry extends SourcedEntry {
   time: Date;
   /** Units, when the entry is numeric. */
   units: number | null;
@@ -42,23 +54,23 @@ export interface InsulinEntry {
   nonNumeric: boolean;
 }
 
-export interface FoodEntry {
+export interface FoodEntry extends SourcedEntry {
   time: Date;
   grams: number | null;
   servings: number | null;
   nonNumeric: boolean;
 }
 
-export interface NoteEntry {
+export interface NoteEntry extends SourcedEntry {
   time: Date;
   text: string;
 }
 
-export interface DeviceEventEntry {
+export interface DeviceEventEntry extends SourcedEntry {
   time: Date;
 }
 
-export interface StripGlucoseEntry {
+export interface StripGlucoseEntry extends SourcedEntry {
   time: Date;
   mgdl: number;
 }

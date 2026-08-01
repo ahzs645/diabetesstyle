@@ -10,7 +10,7 @@ import {
 import type { GlucoseReading } from "./types";
 
 function reading(iso: string, mgdl: number): GlucoseReading {
-  return { time: new Date(iso), mgdl, historic: true };
+  return { time: new Date(iso), serial: "A", mgdl, historic: true };
 }
 
 describe("A1C formulas", () => {
