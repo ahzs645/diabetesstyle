@@ -2,6 +2,18 @@
    white "paper" surface (it recreates a printed medical report), while the
    surrounding toolbar follows the app theme. */
 
+/* A popover renders anchored to its field before the clamp in controls.tsx
+   measures it and shifts it on-screen. Even that momentary overflow makes
+   mobile browsers permanently widen the layout viewport (the page "zooms
+   out" and stays that way), so the document must never gain horizontal
+   overflow: wide report content scrolls inside .lr-hscroll, not the page.
+   clip (unlike hidden) doesn't create a scroll container, so sticky
+   positioning and vertical scrolling behave as before. */
+html,
+body {
+  overflow-x: clip;
+}
+
 .lr-root {
   --lr-blue: #2e8bc8;
   --lr-ink: #222;
@@ -1420,11 +1432,38 @@
     min-height: 38px;
     padding-inline: 14px;
   }
-  /* the calendar must never hang off the side of a narrow screen */
-  .lr-datefield .lr-popover {
-    inset-inline-start: auto;
-    inset-inline-end: 0;
-    max-width: calc(100vw - 32px);
+  /* Popovers are shifted back inside the viewport by useViewportClamp in
+     controls.tsx, so here they only need finger-sized targets and a hard
+     ceiling in case a screen is narrower than the calendar itself. */
+  .lr-popover {
+    max-width: calc(100vw - 16px);
+  }
+  .lr-select-option {
+    padding-block: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lr-pick {
+    width: 262px;
+  }
+  .lr-pick-nav {
+    padding: 6px 12px;
+    font-size: 1.15rem;
+  }
+  .lr-pick-title {
+    font-size: 0.88rem;
+    padding: 6px 10px;
+  }
+  .lr-pick-weekday {
+    font-size: 0.66rem;
+  }
+  .lr-pick-day {
+    padding: 8px 0;
+    font-size: 0.85rem;
+  }
+  .lr-pick-year {
+    padding: 11px 0;
+    font-size: 0.85rem;
   }
 
   /* report tabs: bigger touch targets, no rubber-banding the page */
