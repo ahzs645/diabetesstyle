@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -29,6 +30,29 @@ function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement
       document.removeEventListener("keydown", onKey);
     };
   }, [open, close, ref]);
+}
+
+/**
+ * Popovers are anchored to their field, but on a phone the field may sit in
+ * a half-width grid column while the popover has a fixed width — CSS alone
+ * cannot know which side has room. Measure once on open and shift the
+ * popover back inside the viewport.
+ */
+function useViewportClamp(open: boolean, ref: RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = ref.current;
+    if (!el) return;
+    const margin = 8;
+    el.style.transform = "";
+    const rect = el.getBoundingClientRect();
+    let dx = 0;
+    if (rect.right > window.innerWidth - margin) {
+      dx = window.innerWidth - margin - rect.right;
+    }
+    if (rect.left + dx < margin) dx = margin - rect.left;
+    if (dx !== 0) el.style.transform = `translateX(${dx}px)`;
+  }, [open, ref]);
 }
 
 function Chevron(): ReactElement {
@@ -62,8 +86,10 @@ export function Select({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
   useDismiss(open, () => setOpen(false), rootRef);
+  useViewportClamp(open, listRef);
 
   const selected = options.findIndex((o) => o.value === value);
 
@@ -136,7 +162,7 @@ export function Select({
         <Chevron />
       </button>
       {open ? (
-        <ul className="lr-popover lr-select-list" role="listbox" aria-label={ariaLabel}>
+        <ul className="lr-popover lr-select-list" role="listbox" aria-label={ariaLabel} ref={listRef}>
           {options.map((opt, i) => (
             <li
               key={opt.value}
@@ -186,12 +212,14 @@ export function formatDisplayDate(iso: string): string {
   return d ? `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}` : "";
 }
 
-/** Parse typed "DD/MM/YYYY" (or "yyyy-mm-dd") into ISO, or null. */
+/** Parse typed "DD/MM/YYYY", "DDMMYYYY" or "yyyy-mm-dd" into ISO, or null. */
 export function parseDateText(text: string): string | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
   let day: number, month: number, year: number;
-  let m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(trimmed);
+  // bare DDMMYYYY first: phone numeric keypads have no separator keys
+  let m = /^(\d{2})(\d{2})(\d{4})$/.exec(trimmed);
+  if (!m) m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(trimmed);
   if (m) {
     [day, month, year] = [Number(m[1]), Number(m[2]), Number(m[3])];
   } else {
@@ -232,7 +260,9 @@ export function DateField({
   const [viewYear, setViewYear] = useState(initial.getFullYear());
   const [viewMonth, setViewMonth] = useState(initial.getMonth());
   const rootRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   useDismiss(open, () => setOpen(false), rootRef);
+  useViewportClamp(open, popRef);
 
   // keep the text box in sync when the value changes from outside
   useEffect(() => {
@@ -329,7 +359,7 @@ export function DateField({
         </button>
       </div>
       {open ? (
-        <div className="lr-popover lr-pick" role="dialog" aria-label={ariaLabel}>
+        <div className="lr-popover lr-pick" role="dialog" aria-label={ariaLabel} ref={popRef}>
           <div className="lr-pick-head">
             <button
               type="button"
