@@ -12,7 +12,7 @@ import {
   sourceWindows,
   summarizeSources,
 } from "./sources";
-import { makePeriod } from "./stats";
+import { makePeriod, scansAreStreamed } from "./stats";
 import type { GlucoseReading, LibreExport } from "./types";
 
 /**
@@ -223,5 +223,39 @@ describe("filterBySource", () => {
     expect(mergedWindow(only, period).meanMgdl).toBeCloseTo(
       sourceWindow(data, "NEW-2222", period).meanMgdl!,
     );
+  });
+});
+
+describe("streamed scan detection", () => {
+  const scan = (minutesFromStart: number): GlucoseReading => ({
+    time: new Date(2026, 6, 13, 0, minutesFromStart),
+    serial: "A",
+    mgdl: 110,
+    historic: false,
+  });
+
+  it("flags a once-a-minute streamed series", () => {
+    const streamed = Array.from({ length: 200 }, (_, i) => scan(i));
+    expect(scansAreStreamed(streamed)).toBe(true);
+  });
+
+  it("leaves a hand-scanned series alone", () => {
+    // someone scanning every couple of hours for a month
+    const manual = Array.from({ length: 200 }, (_, i) => scan(i * 120));
+    expect(scansAreStreamed(manual)).toBe(false);
+  });
+
+  it("does not judge a series too short to have a shape", () => {
+    expect(scansAreStreamed(Array.from({ length: 5 }, (_, i) => scan(i)))).toBe(false);
+    expect(scansAreStreamed([])).toBe(false);
+  });
+
+  it("ignores dense bursts inside an otherwise manual series", () => {
+    // a handful of rapid re-scans should not tip the median
+    const mixed = [
+      ...Array.from({ length: 60 }, (_, i) => scan(i * 90)),
+      ...Array.from({ length: 10 }, (_, i) => scan(60 * 90 + i)),
+    ];
+    expect(scansAreStreamed(mixed)).toBe(false);
   });
 });

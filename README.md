@@ -50,7 +50,25 @@ that put the number in context:
 
 The GMI card prints its result alongside its formula: the two equations run on
 the same mean and routinely disagree by half a percentage point, so showing one
-number and hiding the other misleads.
+number and hiding the other misleads. The same caveat names where the other
+number comes from — the AGP, Snapshot and Pattern Insights pages print GMI,
+this page prints the ADAG estimate, and a report set showing 6.0% on one page
+and 5.5% on another needs to say why.
+
+The arithmetic on this page is printed for the reader to check, so it has to
+reconcile. In mmol/L the ADAG constants are the mg/dL pair divided by the
+conversion factor rather than the paper's rounded 1.59 / 2.59: the rounded
+pair is a slightly different line and its printed sum lands 0.01 points away
+from the result printed beside it.
+
+## Streamed scan readings
+
+A LibreView export's "scan" rows are not always scans. Libre 3 / LibreLink
+stores a value roughly every minute while the phone is in range, so an export
+can carry hundreds a day without anyone having opened the app. Where that is
+detected — by the typical gap between consecutive scans — the Snapshot's
+*Average scans/views* figure is annotated, since on its own it reads as a
+count of how often the user looked.
 
 The Estimated A1C report also carries a coverage caveat whenever the value is
 backed by less than 70% of the days it is labelled with. It is worded and

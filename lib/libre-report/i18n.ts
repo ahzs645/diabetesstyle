@@ -279,6 +279,10 @@ const dict = {
     ar: "تختلف المعادلتان على هذه الفترة: A1C المقدّر {a} مقابل GMI {g} — بفارق {dpp} نقطة مئوية. ووجد Bergenstal وآخرون أن الفارق بين GMI وقيمة A1C المخبرية بلغ 0.3 نقطة فأكثر لدى 51% من الأشخاص و0.5 نقطة فأكثر لدى 28%، ولهذا استُبدل مصطلح «A1C المقدّر» بمؤشر GMI. وفي بيانات واقعية بلغ الفارق 0.5 نقطة فأكثر لدى نصف الحالات.",
     en: "On this period the two equations disagree: estimated A1C {a} against GMI {g} — {dpp} percentage points apart. Bergenstal et al. found GMI and laboratory A1C differed by 0.3 points or more in 51% of people and by 0.5 or more in 28%, which is why “estimated A1C” was retired in favour of GMI. In real-world data the gap reached 0.5 points or more in half of all encounters.",
   },
+  a1cTrustOtherReports: {
+    ar: "ولهذا يقرأ باقي هذا التقرير قيمة مختلفة: تطبع تقارير AGP واللقطة وتأملات النمط مؤشر GMI ({g}) لا القيمة المعروضة هنا ({a}). والرقمان مبنيان على المتوسط نفسه، والفارق بينهما فارق معادلة لا فارق في الجلوكوز.",
+    en: "This is why the rest of this report set reads differently: the AGP, Snapshot and Pattern Insights pages print GMI ({g}), not the value shown here ({a}). Both come from the same mean — the gap between them is a difference of equation, not of glucose.",
+  },
   a1cTrustPhysiology: {
     ar: "كل ما يغيّر عمر كريات الدم الحمراء يبعد قيمة A1C المخبرية عن أي تقدير مشتق من الجلوكوز، صعودًا أو هبوطًا: فقر الدم، ومتغيرات الهيموغلوبين، ونقل الدم الحديث، والقصور الكلوي المزمن، والحمل. ولم تشمل مجموعة ADAG — 268 من النوع الأول و159 من النوع الثاني و80 من غير المصابين — تلك الحالات.",
     en: "Anything that changes how long red cells live moves laboratory A1C away from any glucose-derived estimate, in either direction: anaemia, haemoglobin variants, recent transfusion, chronic kidney disease and pregnancy. The ADAG cohort — 268 people with type 1 diabetes, 159 with type 2 and 80 without — did not cover those situations.",
@@ -286,6 +290,10 @@ const dict = {
   a1cTrustSources: {
     ar: "هذه النافذة مركّبة: أسهمت فيها {k} من نسخ التطبيق، وفيما يلي ما غطّته كل نسخة من أيام النافذة والقيمة التي كانت ستعرضها وحدها — {list}. ولم تجتمع البيانات كلها في قاعدة بيانات هاتف واحد، فلم تُعرض هذه القيمة على شاشة أي هاتف.",
     en: "This window is a splice: {k} app instances contributed to it. Each is listed with the days of the window it covered and the value it alone would have shown — {list}. No single phone's database held all of it, so no phone screen displayed this number.",
+  },
+  streamedScansComment: {
+    ar: "قراءات المسح/العروض البالغة {n} يوميًا مبثوثة من المجس لا ممسوحة يدويًا: يسجّل هذا المجس قيمة كل دقيقة تقريبًا ما دام الهاتف في نطاقه، فالعدد يعكس طول بقاء الهاتف قرب المجس لا عدد مرات الاطّلاع على التطبيق.",
+    en: "The {n} scans/views per day are streamed by the sensor, not scanned by hand: this sensor records a value about once a minute while the phone is in range, so the count reflects how long the phone stayed near the sensor rather than how often anyone opened the app.",
   },
   a1cRefsTitle: { ar: "المراجع", en: "References" },
   a1cRefAdagScope: {

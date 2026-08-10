@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADAG_OFFSET,
+  ADAG_SLOPE,
   cumulativeEa1c,
   dailyMeans,
   ea1cPercent,
@@ -31,6 +33,34 @@ describe("A1C formulas", () => {
   it("matches the GMI regression", () => {
     expect(gmiPercent(100)).toBeCloseTo(5.7, 1);
     expect(gmiPercent(200)).toBeCloseTo(8.1, 1);
+  });
+});
+
+describe("mmol/L display constants", () => {
+  // The report prints its own arithmetic, so the constants it substitutes
+  // must reproduce the result it shows. The ADAG paper's rounded mmol/L pair
+  // (2.59 / 1.59) does not; the mg/dL pair divided by the conversion factor
+  // does. Guard the property rather than the numbers.
+  const MGDL_PER_MMOL = 18.016;
+
+  it("reproduces the mg/dL result from a mean shown in mmol/L", () => {
+    const offset = ADAG_OFFSET / MGDL_PER_MMOL;
+    const slope = ADAG_SLOPE / MGDL_PER_MMOL;
+    for (const meanMgdl of [70, 112.4126, 154, 240]) {
+      const shown = Number((meanMgdl / MGDL_PER_MMOL).toFixed(2));
+      const fromMmol = (shown + offset) / slope;
+      // agrees with the mg/dL path to the two decimals the screen prints
+      expect(fromMmol).toBeCloseTo(ea1cPercent(meanMgdl), 2);
+    }
+  });
+
+  it("is the case the paper's rounded pair misses", () => {
+    const shown = 6.24; // 112.4 mg/dL, the dataset's 14-day mean
+    const rounded = (shown + 2.59) / 1.59;
+    const derived = (shown + ADAG_OFFSET / MGDL_PER_MMOL) / (ADAG_SLOPE / MGDL_PER_MMOL);
+    expect(rounded.toFixed(2)).toBe("5.55");
+    expect(derived.toFixed(2)).toBe("5.54");
+    expect(ea1cPercent(112.4126).toFixed(2)).toBe("5.54");
   });
 });
 

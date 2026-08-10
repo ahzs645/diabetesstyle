@@ -12,9 +12,15 @@ import type { GlucoseReading } from "./types";
 
 export const ADAG_OFFSET = 46.7;
 export const ADAG_SLOPE = 28.7;
-/** ADAG constants for a mean expressed in mmol/L: (mean + 2.59) / 1.59. */
-export const ADAG_OFFSET_MMOL = 2.59;
-export const ADAG_SLOPE_MMOL = 1.59;
+/*
+ * There is deliberately no mmol/L constant pair here. The ADAG paper prints
+ * one — (mean + 2.59) / 1.59 — but it is a 3-significant-figure rounding of
+ * the mg/dL line, and the A1C report shows its arithmetic to the reader: with
+ * the rounded pair the printed sum does not reproduce the printed result
+ * (5.55 against 5.54 on a mean of 6.24 mmol/L). The report therefore divides
+ * these constants by the display conversion factor, exactly as it already
+ * does for the GMI slope.
+ */
 
 export const IFCC_SLOPE = 10.929;
 export const IFCC_OFFSET = 2.15;

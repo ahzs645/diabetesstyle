@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { flushSync } from "react-dom";
 import {
   ADAG_OFFSET,
-  ADAG_OFFSET_MMOL,
   ADAG_SLOPE,
-  ADAG_SLOPE_MMOL,
   cumulativeEa1c,
   dailyMeans,
   ea1cPercent,
@@ -205,9 +203,14 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
 
   const nf = (v: number, digits = 1) => formatNumber(v, lang, digits);
   const meanShown = mean === null ? null : nf(toGlucoseUnit(mean, unit), unit === "mmol/L" ? 2 : 1);
-  // ADAG constants in the display unit, so the substitution matches the card
-  const adagOffset = unit === "mmol/L" ? ADAG_OFFSET_MMOL : ADAG_OFFSET;
-  const adagSlope = unit === "mmol/L" ? ADAG_SLOPE_MMOL : ADAG_SLOPE;
+  // ADAG constants in the display unit, so the substitution matches the card.
+  // Derived from the mg/dL pair rather than the paper's rounded mmol/L pair:
+  // this screen prints the arithmetic, and a reader must be able to reproduce
+  // the result from it. See the note in lib/libre-report/a1c.ts.
+  const adagOffset =
+    unit === "mmol/L" ? nf(ADAG_OFFSET / MGDL_PER_MMOL, 4) : ADAG_OFFSET;
+  const adagSlope =
+    unit === "mmol/L" ? nf(ADAG_SLOPE / MGDL_PER_MMOL, 4) : ADAG_SLOPE;
 
   return (
     <ReportPage ctx={ctx} title={t("estimatedA1c")} id="estimated-a1c">
@@ -395,6 +398,10 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
                     a: formatPct(exact, lang, 1),
                     g: formatPct(gmi, lang, 1),
                     dpp: nf(Math.abs(gmi - exact), 2),
+                  })}{" "}
+                  {t("a1cTrustOtherReports", {
+                    a: formatPct(exact, lang, 1),
+                    g: formatPct(gmi, lang, 1),
                   })}
                 </li>
               )}
