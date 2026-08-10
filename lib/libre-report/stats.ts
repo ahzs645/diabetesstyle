@@ -1,4 +1,10 @@
+import { gmiMmolMol, gmiPercent } from "./a1c";
+import { dayKey, startOfDay } from "./day";
 import type { GlucoseReading, LibreExport } from "./types";
+
+// re-exported so the day helpers stay reachable from the stats module every
+// report already imports
+export { dayKey, startOfDay };
 
 /**
  * Analytics for LibreView-style reports. All computations follow the
@@ -40,16 +46,6 @@ export function makePeriod(endDay: Date, days: number): ReportPeriod {
   const start = new Date(end);
   start.setDate(start.getDate() - days);
   return { start, end, days };
-}
-
-export function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-export function dayKey(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 function inPeriod(time: Date, period: ReportPeriod): boolean {
@@ -197,8 +193,8 @@ export function computePeriodStats(
     averageGlucose: avg,
     sd,
     cvPct: cv,
-    gmiPercent: avg !== null ? 3.31 + 0.02392 * avg : null,
-    gmiMmolMol: avg !== null ? 12.71 + 4.70587 * (avg / 18.016) : null,
+    gmiPercent: avg !== null ? gmiPercent(avg) : null,
+    gmiMmolMol: avg !== null ? gmiMmolMol(avg) : null,
     sensorActivePct: readings.length
       ? sensorActiveSlotCoverage(readings, period)
       : null,

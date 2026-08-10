@@ -31,6 +31,12 @@ Two features make that visible:
   whole report set renders exactly what that phone could have produced. A
   banner marks the reports while it is on, and it stays on printouts.
 
+Device names are tracked per serial (`devicesBySerial`), not as one list for
+the file: an account can mix hardware — a reader and a phone upload under
+different device names — and neither should inherit the other's. The Device
+Details report groups each serial under the name it actually reported under,
+and separate-source mode narrows the device list to the selected instance.
+
 ## The Estimated A1C explainer
 
 Behind the report's *How is this value calculated?* toggle sit the three

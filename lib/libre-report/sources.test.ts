@@ -29,13 +29,21 @@ function dayReadings(serial: string, day: number, mgdl: number, count = 4): Gluc
   }));
 }
 
-function exportOf(readings: GlucoseReading[]): LibreExport {
+function exportOf(
+  readings: GlucoseReading[],
+  devicesBySerial?: Record<string, string[]>,
+): LibreExport {
+  const serials = [...new Set(readings.map((r) => r.serial))];
+  const byS =
+    devicesBySerial ??
+    Object.fromEntries(serials.map((s) => [s, ["FreeStyle LibreLink"]]));
   return {
     title: "Glucose Data",
     generatedAt: "",
     generatedBy: "Tester",
-    devices: ["FreeStyle LibreLink"],
-    serials: [...new Set(readings.map((r) => r.serial))],
+    devices: [...new Set(Object.values(byS).flat())],
+    devicesBySerial: byS,
+    serials,
     sourceUnit: "mg/dL",
     readings: [...readings].sort((a, b) => a.time.getTime() - b.time.getTime()),
     insulin: [],
@@ -257,5 +265,42 @@ describe("streamed scan detection", () => {
       ...Array.from({ length: 10 }, (_, i) => scan(60 * 90 + i)),
     ];
     expect(scansAreStreamed(mixed)).toBe(false);
+  });
+});
+
+describe("device names per source", () => {
+  // a reader and a phone on one account: the pairing the CSV carries must
+  // survive into the per-source summaries and into separate-source mode
+  const MIXED = exportOf(
+    [...dayReadings("READER-1", 1, 120), ...dayReadings("PHONE-2", 2, 100)],
+    { "READER-1": ["FreeStyle Libre 2 reader"], "PHONE-2": ["FreeStyle LibreLink"] },
+  );
+
+  it("gives each source only the device it reported under", () => {
+    const [reader, phone] = summarizeSources(MIXED);
+    expect(reader.devices).toEqual(["FreeStyle Libre 2 reader"]);
+    expect(phone.devices).toEqual(["FreeStyle LibreLink"]);
+  });
+
+  it("narrows the device list in separate-source mode", () => {
+    const only = filterBySource(MIXED, "PHONE-2");
+    expect(only.devices).toEqual(["FreeStyle LibreLink"]);
+    expect(only.devicesBySerial).toEqual({ "PHONE-2": ["FreeStyle LibreLink"] });
+  });
+
+  it("keeps both names on a serial that reported under two", () => {
+    const both = exportOf(dayReadings("DUAL-1", 1, 120), {
+      "DUAL-1": ["FreeStyle LibreLink", "FreeStyle Libre 3"],
+    });
+    expect(summarizeSources(both)[0].devices).toEqual([
+      "FreeStyle LibreLink",
+      "FreeStyle Libre 3",
+    ]);
+  });
+
+  it("survives a serial the export never named a device for", () => {
+    const unnamed = exportOf(dayReadings("GHOST-1", 1, 120), {});
+    expect(summarizeSources(unnamed)[0].devices).toEqual([]);
+    expect(filterBySource(unnamed, "GHOST-1").devices).toEqual([]);
   });
 });

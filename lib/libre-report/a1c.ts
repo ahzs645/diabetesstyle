@@ -1,4 +1,5 @@
-import { dayKey, type ReportPeriod } from "./stats";
+import { dayKey } from "./day";
+import type { ReportPeriod } from "./stats";
 import type { GlucoseReading } from "./types";
 
 /**
@@ -41,6 +42,21 @@ export function ngspToIfcc(a1cPercent: number): number {
 /** GMI (%) from a mean glucose in mg/dL. */
 export function gmiPercent(meanMgdl: number): number {
   return GMI_INTERCEPT + GMI_SLOPE * meanMgdl;
+}
+
+/**
+ * GMI in IFCC mmol/mol from a mean glucose in mg/dL.
+ *
+ * Bergenstal et al. also print a direct mmol/mol regression
+ * (12.71 + 4.70587 × mean mmol/L). It is the same fit expressed in the other
+ * unit system, and rounding inside each published form makes the two disagree
+ * by up to 0.06 mmol/mol — enough to shift the displayed whole number by one
+ * near a boundary. Going through `ngspToIfcc` keeps a single definition of
+ * GMI and converts it exactly as the estimated A1C is converted, so the two
+ * metrics cannot drift apart on the unit scale.
+ */
+export function gmiMmolMol(meanMgdl: number): number {
+  return ngspToIfcc(gmiPercent(meanMgdl));
 }
 
 /** One calendar day's worth of historic readings, summarized. */
