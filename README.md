@@ -31,6 +31,27 @@ Two features make that visible:
   whole report set renders exactly what that phone could have produced. A
   banner marks the reports while it is on, and it stays on printouts.
 
+## The Estimated A1C explainer
+
+Behind the report's *How is this value calculated?* toggle sit the three
+equations, the step-by-step arithmetic on the loaded data, and two sections
+that put the number in context:
+
+- **How far this number can be trusted** — the length of the averaged window
+  against the two to three months a laboratory A1C reflects, the share of the
+  window's expected readings actually present, the spread the ADAG regression
+  leaves around an individual (R² = 0.84), the GMI value for the same mean
+  next to the eA1C, the conditions that decouple A1C from mean glucose, and —
+  when the window spans more than one app instance — the fact that the value
+  is a splice no single phone ever displayed. Every figure is computed from
+  the loaded export, not hard-coded.
+- **References** — the four papers behind the equations and the caveats, each
+  hyperlinked to its DOI and annotated with what it covers and where it stops.
+
+The GMI card prints its result alongside its formula: the two equations run on
+the same mean and routinely disagree by half a percentage point, so showing one
+number and hiding the other misleads.
+
 The Estimated A1C report also carries a coverage caveat whenever the value is
 backed by less than 70% of the days it is labelled with. It is worded and
 measured to match the caveat the LibreLink app prints under its own Estimated

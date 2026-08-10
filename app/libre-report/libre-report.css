@@ -1698,6 +1698,63 @@ body {
   color: var(--lr-muted);
   line-height: 1.6;
 }
+/* the equation's result, next to the equation itself */
+.lr-eq-result {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+/* the published source under an equation card */
+.lr-eq-cite {
+  margin: 6px 0 0;
+  font-size: 0.66rem;
+  line-height: 1.5;
+  /* citations stay Latin in both languages, so they read left-to-right even
+     inside the RTL report */
+  text-align: start;
+}
+.lr-eq-cite a,
+.lr-a1c-ref-link {
+  color: var(--lr-blue);
+  text-decoration: underline;
+}
+
+/* "how far this number can be trusted" */
+.lr-a1c-caveats {
+  margin: 0 0 14px;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 7px;
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: var(--lr-ink);
+}
+.lr-a1c-refs {
+  margin: 0 0 6px;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 8px;
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+.lr-a1c-ref-scope {
+  display: block;
+  margin-top: 3px;
+  color: var(--lr-muted);
+}
+@media print {
+  /* a printed link cannot be clicked, so spell the target out once */
+  .lr-a1c-refs a::after {
+    content: " (" attr(href) ")";
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .lr-eq-cite a,
+  .lr-a1c-ref-link {
+    color: var(--lr-ink);
+  }
+}
 
 .lr-a1c-steps {
   list-style: none;

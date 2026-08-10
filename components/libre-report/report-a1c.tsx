@@ -10,6 +10,7 @@ import {
   ea1cPercent,
   GMI_INTERCEPT,
   GMI_SLOPE,
+  gmiPercent,
   IFCC_OFFSET,
   IFCC_SLOPE,
   ngspToIfcc,
@@ -25,7 +26,12 @@ import {
   toGlucoseUnit,
   type ReportLang,
 } from "../../lib/libre-report/i18n";
-import { LOW_COVERAGE_PCT, mergedWindow } from "../../lib/libre-report/sources";
+import {
+  LOW_COVERAGE_PCT,
+  mergedWindow,
+  READINGS_PER_DAY,
+  sourceWindows,
+} from "../../lib/libre-report/sources";
 import { readingsInPeriod, startOfDay } from "../../lib/libre-report/stats";
 import { AutoWidth } from "./auto-width";
 import { DailyMeanBarChart, Ea1cLineChart } from "./charts";
@@ -70,6 +76,49 @@ function Step({
     </li>
   );
 }
+
+/**
+ * The published source behind an equation. Author/journal strings stay Latin
+ * in both languages — a transliterated citation cannot be looked up.
+ */
+function Cite({ href, children }: { href: string; children: string }): ReactElement {
+  return (
+    <p className="lr-eq-cite" dir="ltr">
+      <a href={href} target="_blank" rel="noreferrer noopener">
+        {children}
+      </a>
+    </p>
+  );
+}
+
+const REF_ADAG = "https://doi.org/10.2337/dc08-0545";
+const REF_IFCC = "https://ngsp.org/ifccngsp.asp";
+const REF_GMI = "https://doi.org/10.2337/dc18-1581";
+const REF_PERLMAN = "https://doi.org/10.1089/dia.2020.0501";
+
+/** Full references, in the order the equations appear above them. */
+const REFERENCES: { href: string; text: string; scope: "a1cRefAdagScope" | "a1cRefIfccScope" | "a1cRefGmiScope" | "a1cRefPerlmanScope" }[] = [
+  {
+    href: REF_ADAG,
+    text: "Nathan DM, Kuenen J, Borg R, Zheng H, Schoenfeld D, Heine RJ; A1c-Derived Average Glucose (ADAG) Study Group. Translating the A1C Assay Into Estimated Average Glucose Values. Diabetes Care 2008;31(8):1473–1478.",
+    scope: "a1cRefAdagScope",
+  },
+  {
+    href: REF_IFCC,
+    text: "NGSP. HbA1c methods — the IFCC/NGSP master equation: NGSP = 0.09148 × IFCC + 2.152.",
+    scope: "a1cRefIfccScope",
+  },
+  {
+    href: REF_GMI,
+    text: "Bergenstal RM, Beck RW, Close KL, et al. Glucose Management Indicator (GMI): A New Term for Estimating A1C From Continuous Glucose Monitoring. Diabetes Care 2018;41(11):2275–2280.",
+    scope: "a1cRefGmiScope",
+  },
+  {
+    href: REF_PERLMAN,
+    text: "Perlman JE, Gooley TA, McNulty B, Meyers J, Hirsch IB. HbA1c and Glucose Management Indicator Discordance: A Real-World Analysis. Diabetes Technol Ther 2021;23(4):253–258.",
+    scope: "a1cRefPerlmanScope",
+  },
+];
 
 export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
@@ -139,10 +188,20 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
     };
   }, [datasetDaily, period]);
 
+  // Which app instances the window is actually built from. A merged window
+  // spanning a phone handover is a splice no single phone screen ever showed.
+  const periodSources = useMemo(
+    () => sourceWindows(data, period).filter((s) => s.n > 0),
+    [data, period],
+  );
+
   const mean = totals.n > 0 ? totals.sum / totals.n : null;
   const exact = mean === null ? null : ea1cPercent(mean);
   const rounded = exact === null ? null : Math.round(exact * 10) / 10;
   const ifcc = exact === null ? null : Math.round(ngspToIfcc(exact));
+  // GMI on the same mean. The equation card used to print the formula and
+  // never the result, which hid the one comparison that matters here.
+  const gmi = mean === null ? null : gmiPercent(mean);
 
   const nf = (v: number, digits = 1) => formatNumber(v, lang, digits);
   const meanShown = mean === null ? null : nf(toGlucoseUnit(mean, unit), unit === "mmol/L" ? 2 : 1);
@@ -261,6 +320,7 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
                   eA1C % = ({t("a1cMeanShort")} + {adagOffset}) ÷ {adagSlope}
                 </div>
                 <p className="lr-eq-note">{t("a1cEqAdagNote")}</p>
+                <Cite href={REF_ADAG}>Nathan et al., Diabetes Care 2008;31:1473–1478</Cite>
               </div>
               <div className="lr-eq-card">
                 <div className="lr-eq-title">{t("a1cEqIfccTitle")}</div>
@@ -268,13 +328,20 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
                   mmol/mol = {IFCC_SLOPE} × (A1C % − {IFCC_OFFSET})
                 </div>
                 <p className="lr-eq-note">{t("a1cEqIfccNote")}</p>
+                <Cite href={REF_IFCC}>NGSP–IFCC master equation (ngsp.org)</Cite>
               </div>
               <div className="lr-eq-card">
                 <div className="lr-eq-title">(GMI) {t("gmi")}</div>
                 <div className="lr-eq-formula" dir="ltr">
                   GMI % = {GMI_INTERCEPT} + {unit === "mmol/L" ? nf(GMI_SLOPE * MGDL_PER_MMOL, 4) : GMI_SLOPE} × {t("a1cMeanShort")}
                 </div>
+                {gmi === null ? null : (
+                  <div className="lr-eq-result" dir="ltr">
+                    {t("a1cResultWord")}: {nf(gmi, 1)} %
+                  </div>
+                )}
                 <p className="lr-eq-note">{t("a1cEqGmiNote")}</p>
+                <Cite href={REF_GMI}>Bergenstal et al., Diabetes Care 2018;41:2275–2280</Cite>
               </div>
             </div>
 
@@ -307,6 +374,66 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
                 />
               </ol>
             )}
+
+            <h3 className="lr-section-rule">{t("a1cTrustTitle")}</h3>
+            <ul className="lr-a1c-caveats">
+              <li>{t("a1cTrustWindow", { d: period.days })}</li>
+              {exact === null ? null : (
+                <li>
+                  {t("a1cTrustCoverage", {
+                    n: formatInt(totals.n, lang),
+                    e: formatInt(period.days * READINGS_PER_DAY, lang),
+                    d: period.days,
+                    p: formatPct(coverage.readingCoveragePct, lang, 0),
+                  })}
+                </li>
+              )}
+              <li>{t("a1cTrustSpread")}</li>
+              {exact === null || gmi === null ? null : (
+                <li>
+                  {t("a1cTrustGmi", {
+                    a: formatPct(exact, lang, 1),
+                    g: formatPct(gmi, lang, 1),
+                    dpp: nf(Math.abs(gmi - exact), 2),
+                  })}
+                </li>
+              )}
+              <li>{t("a1cTrustPhysiology")}</li>
+              {periodSources.length > 1 ? (
+                <li>
+                  {t("a1cTrustSources", {
+                    k: periodSources.length,
+                    // each entry is a Latin/numeric run inside a sentence
+                    // that may be RTL — isolate it so bidi cannot reorder
+                    // the serial, the day count and the value into nonsense
+                    list: periodSources
+                      .map(
+                        (s) =>
+                          `\u2066${s.short} ${s.daysWithData}/${period.days} → ${formatPct(s.ea1cPercent!, lang, 1)}\u2069`,
+                      )
+                      .join(" · "),
+                  })}
+                </li>
+              ) : null}
+            </ul>
+
+            <h3 className="lr-section-rule">{t("a1cRefsTitle")}</h3>
+            <ol className="lr-a1c-refs">
+              {REFERENCES.map((ref) => (
+                <li key={ref.href}>
+                  <a
+                    className="lr-a1c-ref-link"
+                    dir="ltr"
+                    href={ref.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    {ref.text}
+                  </a>
+                  <span className="lr-a1c-ref-scope">{t(ref.scope)}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         ) : null}
       </section>
