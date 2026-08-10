@@ -83,6 +83,15 @@ export interface LibreExport {
   /** Device display name(s) seen in the file. */
   devices: string[];
   serials: string[];
+  /**
+   * Device display name(s) each serial reported under, keyed by serial.
+   *
+   * An export can mix hardware — a reader and a phone upload to the same
+   * account under different device names — so the file's device list cannot
+   * be attributed to every source in it. This preserves the row-level pairing
+   * the CSV carries.
+   */
+  devicesBySerial: Record<string, string[]>;
   /** Unit detected from headers. Values in this model are always mg/dL. */
   sourceUnit: "mg/dL" | "mmol/L";
   /** All glucose readings (historic + scans) sorted by time. */

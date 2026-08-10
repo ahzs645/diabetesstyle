@@ -1,4 +1,10 @@
+import { gmiMmolMol, gmiPercent } from "./a1c";
+import { dayKey, startOfDay } from "./day";
 import type { GlucoseReading, LibreExport } from "./types";
+
+// re-exported so the day helpers stay reachable from the stats module every
+// report already imports
+export { dayKey, startOfDay };
 
 /**
  * Analytics for LibreView-style reports. All computations follow the
@@ -40,16 +46,6 @@ export function makePeriod(endDay: Date, days: number): ReportPeriod {
   const start = new Date(end);
   start.setDate(start.getDate() - days);
   return { start, end, days };
-}
-
-export function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-export function dayKey(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 function inPeriod(time: Date, period: ReportPeriod): boolean {
@@ -109,6 +105,38 @@ export interface LowGlucoseEvent {
 const SLOT_MIN = 15; // the sensor stores one automatic reading per 15 minutes
 
 /**
+ * A typical gap between scan readings at or below this many minutes means the
+ * series is streamed rather than user-initiated. A person scanning by hand
+ * leaves gaps of tens of minutes; a streaming sensor leaves one.
+ */
+const STREAMED_SCAN_GAP_MIN = 2;
+
+/** Below this many scans there is not enough spacing to judge. */
+const STREAMED_SCAN_MIN_COUNT = 30;
+
+/**
+ * Whether a scan series was streamed by the sensor rather than triggered by
+ * the user. Libre 3 / LibreLink stores a value roughly every minute while the
+ * phone is in range, so "scans/views per day" then counts how long the phone
+ * stayed near the sensor, not how often anyone looked at it — the difference
+ * between a behavioural metric and device chatter.
+ *
+ * `scans` must be in chronological order, as `LibreExport.readings` is.
+ */
+export function scansAreStreamed(scans: GlucoseReading[]): boolean {
+  if (scans.length < STREAMED_SCAN_MIN_COUNT) return false;
+  const gaps: number[] = [];
+  for (let i = 1; i < scans.length; i++) {
+    const minutes =
+      (scans[i].time.getTime() - scans[i - 1].time.getTime()) / 60000;
+    if (minutes >= 0) gaps.push(minutes);
+  }
+  if (gaps.length === 0) return false;
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)] <= STREAMED_SCAN_GAP_MIN;
+}
+
+/**
  * "Time sensor active": share of the period's 15-minute slots that captured
  * at least one reading (historic or scan). This tracks the printed reports
  * to within ~2 percentage points — LibreView's exact formula is not public.
@@ -165,8 +193,8 @@ export function computePeriodStats(
     averageGlucose: avg,
     sd,
     cvPct: cv,
-    gmiPercent: avg !== null ? 3.31 + 0.02392 * avg : null,
-    gmiMmolMol: avg !== null ? 12.71 + 4.70587 * (avg / 18.016) : null,
+    gmiPercent: avg !== null ? gmiPercent(avg) : null,
+    gmiMmolMol: avg !== null ? gmiMmolMol(avg) : null,
     sensorActivePct: readings.length
       ? sensorActiveSlotCoverage(readings, period)
       : null,

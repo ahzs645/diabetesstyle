@@ -94,15 +94,13 @@ export function summarizeSources(data: LibreExport): SourceSummary[] {
       entry.scans++;
     }
   }
-  // The export does not tie a device name to a serial row-by-row in a way we
-  // keep, so a source shows every device name in the file when there is more
-  // than one; with a single device name that is exactly right.
-  const devices = data.devices;
   return [...bySerial.entries()]
     .map(([serial, e]) => ({
       serial,
       short: shortSerial(serial),
-      devices,
+      // the names this serial itself reported under — a reader and a phone
+      // on one account must not inherit each other's device name
+      devices: data.devicesBySerial[serial] ?? [],
       first: e.first,
       last: e.last,
       historicCount: e.historic,
@@ -300,8 +298,13 @@ export function datasetBounds(
 export function filterBySource(data: LibreExport, serial: string): LibreExport {
   const keep = <T extends { serial: string }>(rows: T[]) =>
     rows.filter((r) => r.serial === serial);
+  const devices = data.devicesBySerial[serial] ?? [];
   return {
     ...data,
+    // the header and device report must name this instance's hardware only,
+    // not every device the account has ever seen
+    devices,
+    devicesBySerial: devices.length ? { [serial]: devices } : {},
     serials: data.serials.filter((s) => s === serial),
     readings: keep(data.readings),
     insulin: keep(data.insulin),

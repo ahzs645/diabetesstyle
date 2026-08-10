@@ -6,6 +6,7 @@ import {
   monthName,
   weekdayName,
 } from "../../lib/libre-report/i18n";
+import { dayKey } from "../../lib/libre-report/day";
 import type { DayStats } from "../../lib/libre-report/stats";
 import type { ReportContext } from "./context";
 import { LowEventIcon, ScanIcon, SensorIcon } from "./icons";
@@ -34,7 +35,7 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
   );
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d);
-    const key = dayKeyLocal(date);
+    const key = dayKey(date);
     cells.push(byKey.get(key) ?? { day: date });
   }
   while (cells.length % 7 !== 0) cells.push(null);
@@ -111,10 +112,4 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
       </div>
     </ReportPage>
   );
-}
-
-function dayKeyLocal(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
 }

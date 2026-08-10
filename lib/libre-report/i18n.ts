@@ -195,8 +195,8 @@ const dict = {
     en: "Mean glucose → estimated A1C (ADAG equation)",
   },
   a1cEqAdagNote: {
-    ar: "معادلة انحدار من دراسة ADAG (‏Nathan وآخرون، 2008) تربط متوسط الجلوكوز بقيمة A1C المخبرية. تستخدم القراءات التلقائية (كل 15 دقيقة) فقط — قراءات المسح اليدوية لا تدخل في الحساب.",
-    en: "A regression from the ADAG study (Nathan et al., 2008) linking mean glucose to laboratory A1C. Only automatic 15-minute readings are used — manual scans are excluded.",
+    ar: "معادلة انحدار من دراسة ADAG (‏Nathan وآخرون، 2008) تربط متوسط الجلوكوز بقيمة A1C المخبرية. تُستخدم السلسلة التلقائية (كل 15 دقيقة) وحدها؛ وتُستبعد قراءات المسح.",
+    en: "A regression from the ADAG study (Nathan et al., 2008) linking mean glucose to laboratory A1C. Only the automatic 15-minute series is used; scan readings are excluded.",
   },
   a1cEqIfccTitle: {
     ar: "التحويل إلى ملمول/مول (IFCC)",
@@ -215,8 +215,8 @@ const dict = {
     en: "Step-by-step on your data",
   },
   a1cStep1: {
-    ar: "جمع القراءات: {n} قراءة تلقائية (كل 15 دقيقة) في الفترة المحددة؛ تُستبعد قراءات المسح ({s} قراءة).",
-    en: "Collect the readings: {n} automatic 15-minute readings in the selected period; the {s} manual scans are excluded.",
+    ar: "جمع القراءات: {n} قراءة تلقائية (كل 15 دقيقة) في الفترة المحددة. وتُستبعد قراءات المسح ({s} قراءة) — وهي ما يسجّله التطبيق عند الطلب أو يتلقاه بثًا من المجس — كما تُستبعد في إحصاءات ليبري ڤيو نفسها: فهي غير متساوية التباعد، ومتوسطها يرجّح الساعات التي كان فيها الهاتف قرب المجس.",
+    en: "Collect the readings: {n} automatic 15-minute readings in the selected period. The {s} scan readings — logged on demand or streamed from the sensor — are left out, as they are in LibreView's own statistics: they are not evenly spaced, so averaging them would weight the hours the phone spent near the sensor.",
   },
   a1cStep2: {
     ar: "حساب المتوسط الحسابي البسيط لكل القراءات:",
@@ -258,6 +258,60 @@ const dict = {
   a1cReadingsUsed: { ar: "قراءة مستخدمة", en: "readings used" },
   a1cMeanShort: { ar: "المتوسط", en: "Mean" },
   a1cResultWord: { ar: "النتيجة", en: "Result" },
+  // how far the estimate can be trusted
+  a1cTrustTitle: {
+    ar: "إلى أي مدى يمكن الاعتماد على هذه القيمة",
+    en: "How far this number can be trusted",
+  },
+  a1cTrustWindow: {
+    ar: "تحسب هذه القيمة متوسط {d} من الأيام. عُدّلت معادلة ADAG على قيم A1C مخبرية تعكس نحو شهرين إلى ثلاثة أشهر سابقة — إذ أسهم كل من مشاركيها الـ‍507 بنحو 2700 قراءة خلال ثلاثة أشهر. ويطلب واضعو GMI عشرة أيام على الأقل، ويفضَّل أربعة عشر يومًا فأكثر. والنافذة الأقصر من ذلك تقدّر الجلوكوز الحديث لا الربع الذي يعبّر عنه تحليل A1C المخبري.",
+    en: "This value averages {d} days. The ADAG equation was fitted against laboratory A1C, which reflects roughly the previous two to three months — each of its 507 subjects contributed about 2,700 readings over 3 months. GMI's authors ask for at least 10 and preferably 14 or more days. A window shorter than that estimates recent glucose, not the quarter a laboratory A1C reports.",
+  },
+  a1cTrustCoverage: {
+    ar: "يستند المتوسط إلى {n} قراءة من أصل {e} قراءة تلقائية تتوقعها نافذة من {d} يومًا — أي {p}. والفارق توقف معتاد للمجس لا خطأ، غير أن المتوسط يميل إلى الساعات التي كان المجس يعمل فيها.",
+    en: "The mean rests on {n} of the {e} automatic readings a {d}-day window expects — {p}. The shortfall is ordinary sensor downtime rather than an error, but the average is weighted toward the hours the sensor was running.",
+  },
+  a1cTrustSpread: {
+    ar: "تفسّر المعادلة 84% من التباين بين الأشخاص (R² = 0.84) لا كله. وعند قيمة A1C تساوي 7% امتد النطاق 95% لمتوسط الجلوكوز في دراسة ADAG نفسها من 123 إلى 185 ملجم/ديسيلتر — أي أن شخصين لهما المتوسط ذاته قد تختلف قيمتا A1C المخبريتان لديهما اختلافًا واضحًا.",
+    en: "The fit explains 84% of the variation between people (R² = 0.84), not all of it. At an A1C of 7% the ADAG study's own 95% range for mean glucose ran from 123 to 185 mg/dL — two people with the same average glucose can return laboratory A1C values well apart.",
+  },
+  a1cTrustGmi: {
+    ar: "تختلف المعادلتان على هذه الفترة: A1C المقدّر {a} مقابل GMI {g} — بفارق {dpp} نقطة مئوية. ووجد Bergenstal وآخرون أن الفارق بين GMI وقيمة A1C المخبرية بلغ 0.3 نقطة فأكثر لدى 51% من الأشخاص و0.5 نقطة فأكثر لدى 28%، ولهذا استُبدل مصطلح «A1C المقدّر» بمؤشر GMI. وفي بيانات واقعية بلغ الفارق 0.5 نقطة فأكثر لدى نصف الحالات.",
+    en: "On this period the two equations disagree: estimated A1C {a} against GMI {g} — {dpp} percentage points apart. Bergenstal et al. found GMI and laboratory A1C differed by 0.3 points or more in 51% of people and by 0.5 or more in 28%, which is why “estimated A1C” was retired in favour of GMI. In real-world data the gap reached 0.5 points or more in half of all encounters.",
+  },
+  a1cTrustOtherReports: {
+    ar: "ولهذا يقرأ باقي هذا التقرير قيمة مختلفة: تطبع تقارير AGP واللقطة وتأملات النمط مؤشر GMI ({g}) لا القيمة المعروضة هنا ({a}). والرقمان مبنيان على المتوسط نفسه، والفارق بينهما فارق معادلة لا فارق في الجلوكوز.",
+    en: "This is why the rest of this report set reads differently: the AGP, Snapshot and Pattern Insights pages print GMI ({g}), not the value shown here ({a}). Both come from the same mean — the gap between them is a difference of equation, not of glucose.",
+  },
+  a1cTrustPhysiology: {
+    ar: "كل ما يغيّر عمر كريات الدم الحمراء يبعد قيمة A1C المخبرية عن أي تقدير مشتق من الجلوكوز، صعودًا أو هبوطًا: فقر الدم، ومتغيرات الهيموغلوبين، ونقل الدم الحديث، والقصور الكلوي المزمن، والحمل. ولم تشمل مجموعة ADAG — 268 من النوع الأول و159 من النوع الثاني و80 من غير المصابين — تلك الحالات.",
+    en: "Anything that changes how long red cells live moves laboratory A1C away from any glucose-derived estimate, in either direction: anaemia, haemoglobin variants, recent transfusion, chronic kidney disease and pregnancy. The ADAG cohort — 268 people with type 1 diabetes, 159 with type 2 and 80 without — did not cover those situations.",
+  },
+  a1cTrustSources: {
+    ar: "هذه النافذة مركّبة: أسهمت فيها {k} من نسخ التطبيق، وفيما يلي ما غطّته كل نسخة من أيام النافذة والقيمة التي كانت ستعرضها وحدها — {list}. ولم تجتمع البيانات كلها في قاعدة بيانات هاتف واحد، فلم تُعرض هذه القيمة على شاشة أي هاتف.",
+    en: "This window is a splice: {k} app instances contributed to it. Each is listed with the days of the window it covered and the value it alone would have shown — {list}. No single phone's database held all of it, so no phone screen displayed this number.",
+  },
+  streamedScansComment: {
+    ar: "قراءات المسح/العروض البالغة {n} يوميًا مبثوثة من المجس لا ممسوحة يدويًا: يسجّل هذا المجس قيمة كل دقيقة تقريبًا ما دام الهاتف في نطاقه، فالعدد يعكس طول بقاء الهاتف قرب المجس لا عدد مرات الاطّلاع على التطبيق.",
+    en: "The {n} scans/views per day are streamed by the sensor, not scanned by hand: this sensor records a value about once a minute while the phone is in range, so the count reflects how long the phone stayed near the sensor rather than how often anyone opened the app.",
+  },
+  a1cRefsTitle: { ar: "المراجع", en: "References" },
+  a1cRefAdagScope: {
+    ar: "507 مشاركين — 268 من النوع الأول و159 من النوع الثاني و80 من غير المصابين — أسهم كل منهم بنحو 2700 قراءة جلوكوز خلال ثلاثة أشهر؛ R² = 0.84. وهي مصدر المعادلة التي تعكسها هذه الشاشة.",
+    en: "507 subjects — 268 type 1, 159 type 2, 80 without diabetes — each contributing about 2,700 glucose readings over 3 months; R² = 0.84. The source of the equation this screen inverts.",
+  },
+  a1cRefIfccScope: {
+    ar: "تحويل بين مقياسي معايرة لا قياس جديد — فهو ينقل معه ما في التقدير من خطأ ولا يضيف دقة.",
+    en: "A conversion between two assay scales, not a fresh measurement — it carries over whatever error the estimate already has and adds no accuracy.",
+  },
+  a1cRefGmiScope: {
+    ar: "528 شخصًا على جهاز Dexcom G4 ببرنامج 505؛ ويشترط عشرة أيام على الأقل من المراقبة المستمرة، ويفضَّل أربعة عشر يومًا فأكثر. وقد قدّم مؤشر GMI بديلًا عن «A1C المقدّر» الذي أوحى اسمه بصلة بقيمة A1C المخبرية أوثق مما تدعمه البيانات.",
+    en: "528 people on a Dexcom G4 with 505 software; asks for at least 10 and preferably 14 or more days of CGM. Introduced GMI to replace “estimated A1C”, whose name implied a closer link to laboratory A1C than the data support.",
+  },
+  a1cRefPerlmanScope: {
+    ar: "اختبار واقعي للاثنين: في 641 زيارة عيادة اختلف نصفها بمقدار 0.5 نقطة مئوية فأكثر، و22% منها بمقدار نقطة كاملة فأكثر.",
+    en: "A real-world check on the pair: across 641 office encounters, half differed by 0.5 percentage points or more and 22% by a full point or more.",
+  },
   // data sources / separate-source mode
   dataSources: { ar: "مصادر البيانات", en: "Data Sources" },
   source: { ar: "المصدر", en: "Source" },

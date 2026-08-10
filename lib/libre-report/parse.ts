@@ -115,6 +115,10 @@ export function parseLibreExport(text: string): LibreExport {
   const strips: LibreExport["strips"] = [];
   const devices = new Set<string>();
   const serials = new Set<string>();
+  // which device name(s) each serial reported under — a reader and a phone
+  // on one account carry different names, so this pairing cannot be recovered
+  // from the file-wide device list afterwards
+  const devicesBySerial = new Map<string, Set<string>>();
 
   for (let i = 2; i < rows.length; i++) {
     const cols = rows[i];
@@ -125,8 +129,14 @@ export function parseLibreExport(text: string): LibreExport {
     if (type === null) continue;
 
     const serial = (cols[1] ?? "").trim();
-    if (cols[0]) devices.add(cols[0].trim());
+    const device = (cols[0] ?? "").trim();
+    if (device) devices.add(device);
     if (serial) serials.add(serial);
+    if (serial && device) {
+      const named = devicesBySerial.get(serial);
+      if (named) named.add(device);
+      else devicesBySerial.set(serial, new Set([device]));
+    }
 
     switch (type) {
       case RECORD_TYPE.historicGlucose: {
@@ -178,6 +188,9 @@ export function parseLibreExport(text: string): LibreExport {
     generatedBy: (meta[4] ?? "").trim(),
     devices: [...devices],
     serials: [...serials],
+    devicesBySerial: Object.fromEntries(
+      [...devicesBySerial].map(([serial, names]) => [serial, [...names]]),
+    ),
     sourceUnit: isMmol ? "mmol/L" : "mg/dL",
     readings,
     insulin,

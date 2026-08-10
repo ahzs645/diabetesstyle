@@ -6,7 +6,11 @@ import {
   glucoseUnitLabel,
   makeT,
 } from "../../lib/libre-report/i18n";
-import { readingsInPeriod, sensorUsageByTime } from "../../lib/libre-report/stats";
+import {
+  readingsInPeriod,
+  scansAreStreamed,
+  sensorUsageByTime,
+} from "../../lib/libre-report/stats";
 import { LowEventsChart, MedianChart, SensorUsageChart } from "./charts";
 import {
   AppleIcon,
@@ -33,6 +37,20 @@ export function SnapshotReport({ ctx }: { ctx: ReportContext }): ReactElement {
       : stats.lowEvents.reduce((a, e) => a + e.durationMin, 0) / stats.lowEvents.length;
 
   const comments: string[] = [];
+  // "Average scans/views" reads as a behavioural count, so say when it is not
+  // one — a streaming sensor can push it into the hundreds without anyone
+  // having looked at the app.
+  if (
+    scansAreStreamed(
+      readingsInPeriod(ctx.data, ctx.period).filter((r) => !r.historic),
+    )
+  ) {
+    comments.push(
+      t("streamedScansComment", {
+        n: formatNumber(stats.averageScansPerDay, lang),
+      }),
+    );
+  }
   if (stats.daysWithInsulinData < ctx.period.days) {
     comments.push(
       t("insulinGapComment", { n: ctx.period.days - stats.daysWithInsulinData }),

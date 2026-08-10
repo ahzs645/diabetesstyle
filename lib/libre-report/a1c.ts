@@ -1,4 +1,5 @@
-import { dayKey, type ReportPeriod } from "./stats";
+import { dayKey } from "./day";
+import type { ReportPeriod } from "./stats";
 import type { GlucoseReading } from "./types";
 
 /**
@@ -12,9 +13,15 @@ import type { GlucoseReading } from "./types";
 
 export const ADAG_OFFSET = 46.7;
 export const ADAG_SLOPE = 28.7;
-/** ADAG constants for a mean expressed in mmol/L: (mean + 2.59) / 1.59. */
-export const ADAG_OFFSET_MMOL = 2.59;
-export const ADAG_SLOPE_MMOL = 1.59;
+/*
+ * There is deliberately no mmol/L constant pair here. The ADAG paper prints
+ * one — (mean + 2.59) / 1.59 — but it is a 3-significant-figure rounding of
+ * the mg/dL line, and the A1C report shows its arithmetic to the reader: with
+ * the rounded pair the printed sum does not reproduce the printed result
+ * (5.55 against 5.54 on a mean of 6.24 mmol/L). The report therefore divides
+ * these constants by the display conversion factor, exactly as it already
+ * does for the GMI slope.
+ */
 
 export const IFCC_SLOPE = 10.929;
 export const IFCC_OFFSET = 2.15;
@@ -35,6 +42,21 @@ export function ngspToIfcc(a1cPercent: number): number {
 /** GMI (%) from a mean glucose in mg/dL. */
 export function gmiPercent(meanMgdl: number): number {
   return GMI_INTERCEPT + GMI_SLOPE * meanMgdl;
+}
+
+/**
+ * GMI in IFCC mmol/mol from a mean glucose in mg/dL.
+ *
+ * Bergenstal et al. also print a direct mmol/mol regression
+ * (12.71 + 4.70587 × mean mmol/L). It is the same fit expressed in the other
+ * unit system, and rounding inside each published form makes the two disagree
+ * by up to 0.06 mmol/mol — enough to shift the displayed whole number by one
+ * near a boundary. Going through `ngspToIfcc` keeps a single definition of
+ * GMI and converts it exactly as the estimated A1C is converted, so the two
+ * metrics cannot drift apart on the unit scale.
+ */
+export function gmiMmolMol(meanMgdl: number): number {
+  return ngspToIfcc(gmiPercent(meanMgdl));
 }
 
 /** One calendar day's worth of historic readings, summarized. */
