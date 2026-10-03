@@ -183,14 +183,24 @@ export function DailyProfilesGrid({ ctx }: { ctx: ReportContext }): ReactElement
           {row.map((day, ci) =>
             day ? (
               <div key={ci} className="lr-week-cell">
-                <DailyProfileThumb
-                  historic={day.historic}
-                  targets={targets}
-                  dayNumber={day.day.getDate()}
-                  lang={lang}
-                  unit={unit}
-                  showYLabels={ci === 0 && ri === 0}
-                />
+                {/* drawn at its real width (a phone gives each of the seven
+                    columns ~45px; a fixed 96-unit drawing shrank its text
+                    to 3px), and taller than wide there so the curve still
+                    has room; print keeps the original 96 × 64 */}
+                <AutoWidth min={30} printWidth={96}>
+                  {(w) => (
+                    <DailyProfileThumb
+                      historic={day.historic}
+                      targets={targets}
+                      dayNumber={day.day.getDate()}
+                      lang={lang}
+                      unit={unit}
+                      showYLabels={ci === 0 && ri === 0}
+                      width={w}
+                      height={Math.max(40, Math.round((w * 2) / 3))}
+                    />
+                  )}
+                </AutoWidth>
               </div>
             ) : (
               <div key={ci} className="lr-week-cell lr-week-cell-empty" />

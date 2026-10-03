@@ -2,6 +2,14 @@
  * Bilingual labels for the LibreView-style report. Arabic strings are taken
  * verbatim from the printed Arabic report; English strings from the printed
  * English report of the same product.
+ *
+ * One exception to "verbatim": comparison signs. <, >, ≤ and ≥ are Unicode
+ * mirrored characters — in right-to-left text the browser draws ">" with the
+ * "<" glyph, exactly as the printed report does. Copying the glyph seen on
+ * the printout therefore stores the OPPOSITE sign: it then renders flipped
+ * against the rest of the Arabic report and a screen reader announces "less
+ * than" for high glucose. Every sign is stored by meaning, the same character
+ * as the English string (enforced by i18n.test.ts).
  */
 
 export type ReportLang = "ar" | "en";
@@ -71,7 +79,7 @@ const dict = {
   gmi: { ar: "مؤشر إدارة الجلوكوز (GMI)", en: "Glucose Management Indicator (GMI)" },
   glucoseVariability: { ar: "التغير في نسبة الجلوكوز بالدم", en: "Glucose Variability" },
   cvDefinition: {
-    ar: "؛ يُعرّف بأنه معامل التباين بالنسبة المئوية (CV%)؛ الهدف ≥36%",
+    ar: "يُعرّف بأنه معامل التباين بالنسبة المئوية (CV%)؛ الهدف ≤36%",
     en: "Defined as percent coefficient of variation (%CV); target ≤36%",
   },
   veryHigh: { ar: "مرتفع للغاية", en: "Very High" },
@@ -148,8 +156,8 @@ const dict = {
   maxLabel: { ar: "الحد الأقصى", en: "Max" },
   minLabel: { ar: "الحد الأدنى", en: "Min" },
   legend: { ar: "السرد", en: "Legend" },
-  highGlucoseLegend: { ar: "جلوكوز مرتفع (<{v})", en: "High Glucose (>{v})" },
-  lowGlucoseLegend: { ar: "جلوكوز منخفض (>{v})", en: "Low Glucose (<{v})" },
+  highGlucoseLegend: { ar: "جلوكوز مرتفع (>{v})", en: "High Glucose (>{v})" },
+  lowGlucoseLegend: { ar: "جلوكوز منخفض (<{v})", en: "Low Glucose (<{v})" },
   scansViews: { ar: "الفحوصات/ العروض", en: "Scans/Views" },
   logged: { ar: "مسجل", en: "Logged" },
   postMealPeak: { ar: "ذروة بعد الوجبة", en: "Post-Meal Peak" },
@@ -423,6 +431,17 @@ const dict = {
   startDate: { ar: "تاريخ البدء", en: "Start date" },
   endDate: { ar: "تاريخ الانتهاء", en: "End date" },
   allReports: { ar: "كل التقارير", en: "All reports" },
+  reportSettings: { ar: "إعدادات التقرير", en: "Report settings" },
+  editSettings: { ar: "تعديل", en: "Edit" },
+  doneSettings: { ar: "تم", en: "Done" },
+  loadingData: {
+    ar: "جارٍ قراءة الملف وتحليل القراءات…",
+    en: "Reading the file and analysing readings…",
+  },
+  loadingLocal: {
+    ar: "تتم المعالجة على جهازك فقط.",
+    en: "Processing happens on your device only.",
+  },
   patient: { ar: "المريض", en: "Patient" },
   noData: {
     ar: "لا توجد بيانات في الفترة المحددة.",
@@ -431,6 +450,9 @@ const dict = {
 } as const;
 
 export type LabelKey = keyof typeof dict;
+
+/** Every label key, for checks that must cover the whole dictionary. */
+export const LABEL_KEYS = Object.keys(dict) as LabelKey[];
 
 export function makeT(lang: ReportLang) {
   return (key: LabelKey, vars?: Record<string, string | number>): string => {
@@ -495,6 +517,29 @@ export function formatGlucose(
 /** The label for a glucose unit ("mg/dL" / "ملجم/ديسيلتر" or "mmol/L" / "ملمول/لتر"). */
 export function glucoseUnitLabel(unit: GlucoseUnit, lang: ReportLang): string {
   return dict[unit === "mmol/L" ? "mmolL" : "mgdl"][lang];
+}
+
+/**
+ * Device names arrive in the export's language: an Arabic export names the
+ * phone app "فري ستايل ليبري لنك" even when the report is read in English.
+ * Known product names are shown in the report language; anything else is
+ * printed exactly as exported.
+ */
+const DEVICE_NAMES: { ar: string; en: string }[] = [
+  { ar: "فري ستايل ليبري لنك", en: "FreeStyle LibreLink" },
+];
+
+export function deviceDisplayName(name: string, lang: ReportLang): string {
+  const known = DEVICE_NAMES.find((d) => d.ar === name || d.en === name);
+  return known ? known[lang] : name;
+}
+
+/** Device names joined for a header line, in the report language. */
+export function deviceList(names: string[], lang: ReportLang): string {
+  if (names.length === 0) return "—";
+  return names
+    .map((n) => deviceDisplayName(n, lang))
+    .join(lang === "ar" ? "، " : ", ");
 }
 
 /** "(24س)" / "(16س 48د)" style duration from a % of a day. */

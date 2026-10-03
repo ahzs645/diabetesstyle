@@ -1,5 +1,10 @@
 import type { ReactElement } from "react";
-import { formatGlucose, glucoseUnitLabel, makeT } from "../../lib/libre-report/i18n";
+import {
+  deviceDisplayName,
+  formatGlucose,
+  glucoseUnitLabel,
+  makeT,
+} from "../../lib/libre-report/i18n";
 import type { ReportContext } from "./context";
 import { SensorIcon } from "./icons";
 import { ReportPage } from "./report-header";
@@ -40,7 +45,7 @@ export function DeviceDetailsReport({ ctx }: { ctx: ReportContext }): ReactEleme
                 <SensorIcon />
               </div>
               <div>
-                <div className="lr-device-name">{device}</div>
+                <div className="lr-device-name">{deviceDisplayName(device, lang)}</div>
                 {serials.map((s) => (
                   <div key={s} className="lr-device-serial">
                     <span className="lr-side-label">{t("serialNumber")}</span>

@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
-import { formatPeriod, makeT } from "../../lib/libre-report/i18n";
+import { deviceList, formatPeriod, makeT } from "../../lib/libre-report/i18n";
 import type { ReportContext } from "./context";
 
 /**
@@ -46,7 +46,7 @@ export function ReportPage({
             {t("generated")}: <span dir="ltr">{ctx.generatedAt}</span>
           </div>
           <div className="lr-patient-meta lr-device-line">
-            {t("device")}: {ctx.data.devices.join("، ") || "—"}
+            {t("device")}: {deviceList(ctx.data.devices, ctx.lang)}
           </div>
         </div>
       </header>

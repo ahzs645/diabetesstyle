@@ -13,17 +13,54 @@ import { LowEventIcon, ScanIcon, SensorIcon } from "./icons";
 import { ReportPage } from "./report-header";
 
 /**
- * Monthly Summary: a Monday-first calendar of the month containing the
- * report period's last day, matching the printed layout.
+ * Monthly Summary: a Monday-first calendar page for every month the report
+ * period touches, oldest first, each printing on its own page.
+ *
+ * It used to draw only the month holding the period's last day, so a period
+ * crossing a month boundary (20 Sep – 3 Oct) silently dropped most of its
+ * days. Days of a month that fall outside the period are muted, so "outside
+ * the selected period" reads differently from "in the period, no data".
  */
 export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElement {
-  const t = makeT(ctx.lang);
-  const { lang, unit } = ctx;
   const lastDay = new Date(ctx.period.end);
   lastDay.setDate(lastDay.getDate() - 1);
-  const year = lastDay.getFullYear();
-  const month = lastDay.getMonth();
+  const months: { year: number; month: number }[] = [];
+  for (
+    let d = new Date(ctx.period.start.getFullYear(), ctx.period.start.getMonth(), 1);
+    d <= lastDay;
+    d.setMonth(d.getMonth() + 1)
+  ) {
+    months.push({ year: d.getFullYear(), month: d.getMonth() });
+  }
+  return (
+    <>
+      {months.map(({ year, month }, i) => (
+        <MonthPage
+          key={`${year}-${month}`}
+          ctx={ctx}
+          year={year}
+          month={month}
+          // the first page keeps the stable id; later months get their own
+          id={i === 0 ? "monthly-summary" : `monthly-summary-${year}-${month + 1}`}
+        />
+      ))}
+    </>
+  );
+}
 
+function MonthPage({
+  ctx,
+  year,
+  month,
+  id,
+}: {
+  ctx: ReportContext;
+  year: number;
+  month: number;
+  id: string;
+}): ReactElement {
+  const t = makeT(ctx.lang);
+  const { lang, unit, period } = ctx;
   const byKey = new Map(ctx.days.map((d) => [d.key, d]));
   const firstOfMonth = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -47,7 +84,7 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
       ctx={ctx}
       title={t("monthlySummary")}
       subtitle={`${monthName(month, lang)} ${year}`}
-      id="monthly-summary"
+      id={id}
     >
       <div className="lr-monthly-wrap">
         <table className="lr-calendar">
@@ -62,7 +99,15 @@ export function MonthlySummaryReport({ ctx }: { ctx: ReportContext }): ReactElem
             {weeks.map((week, wi) => (
               <tr key={wi}>
                 {week.map((cell, ci) => (
-                  <td key={ci} className="lr-cal-cell">
+                  <td
+                    key={ci}
+                    className={
+                      "lr-cal-cell" +
+                      (cell && (cell.day < period.start || cell.day >= period.end)
+                        ? " lr-cal-cell-out"
+                        : "")
+                    }
+                  >
                     {cell ? (
                       <div className="lr-cal-inner">
                         <div className="lr-cal-daynum">{cell.day.getDate()}</div>

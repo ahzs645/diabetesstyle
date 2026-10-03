@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatFullDate,
   glucoseUnitLabel,
@@ -98,6 +98,16 @@ export default function LibreReportPage() {
   const [dragOver, setDragOver] = useState(false);
   // Separate-source mode: serial the reports are narrowed to, null = merged.
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  // Phones only: the report controls collapse behind a one-line summary so
+  // the toolbar does not fill the whole first screen. Wider screens always
+  // show them (the summary button is hidden there by CSS).
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const tabsRef = useRef<HTMLElement>(null);
+  // The load in flight, if any. Starting another load aborts it, so only the
+  // most recent file or URL ever reaches the reports — whichever of two
+  // overlapping loads happened to finish last no longer wins.
+  const activeLoad = useRef<AbortController | null>(null);
+  const reportsRef = useRef<HTMLElement>(null);
 
   const t = makeT(lang);
 
@@ -140,39 +150,53 @@ export default function LibreReportPage() {
     document.title = lang === "ar" ? "تقارير الجلوكوز" : "Glucose Reports";
   }, [lang]);
 
+  /** Abort whatever is loading and claim the loading state for a new load. */
+  const beginLoad = useCallback((name: string): AbortSignal => {
+    activeLoad.current?.abort();
+    const load = new AbortController();
+    activeLoad.current = load;
+    setLoading(true);
+    setError(null);
+    setFileName(name);
+    return load.signal;
+  }, []);
+
   const onUpload = useCallback(
     async (file: File) => {
-      setLoading(true);
+      const signal = beginLoad(file.name);
       try {
-        setFileName(file.name);
-        applyData(parseLibreExport(await file.text()));
+        const text = await file.text();
+        if (signal.aborted) return;
+        applyData(parseLibreExport(text));
       } catch (e) {
+        if (signal.aborted) return;
         setError(e instanceof Error ? e.message : String(e));
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
-    [applyData],
+    [applyData, beginLoad],
   );
 
   const loadFromUrl = useCallback(
     async (url: string) => {
-      setLoading(true);
-      setError(null);
+      const name = url.split("/").pop()?.split("?")[0];
+      const signal = beginLoad(name ? decodeURIComponent(name) : url);
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, { signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        applyData(parseLibreExport(await res.text()));
-        const name = url.split("/").pop()?.split("?")[0];
-        setFileName(name ? decodeURIComponent(name) : url);
+        const text = await res.text();
+        if (signal.aborted) return;
+        applyData(parseLibreExport(text));
       } catch (e) {
+        if (signal.aborted) return;
         const detail = e instanceof Error ? e.message : String(e);
         setError(`${makeT(lang)("fetchCsvError")}: ${detail}`);
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
-    [applyData, lang],
+    [applyData, beginLoad, lang],
   );
 
   // ?csv=<url> loads that export on startup; with the DOB flag enabled,
@@ -188,6 +212,12 @@ export default function LibreReportPage() {
         if (iso) setPatientDob(iso);
       }
     }
+    // Abort on unmount. In development StrictMode mounts twice; without
+    // this both mounts fetched and parsed the export, and the second result
+    // re-rendered every report with a new ctx — React's dev-only prop diff
+    // then walked the old and new 100k-reading arrays (≈30 s on a large
+    // export).
+    return () => activeLoad.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
@@ -229,21 +259,36 @@ export default function LibreReportPage() {
     };
   }, [onUpload]);
 
-  const ctx: ReportContext | null = useMemo(() => {
-    if (!data || !viewData || !startDate || !endDate) return null;
+  // The period object is the key most reports memoize on, so it must stay
+  // the same object until the dates actually change — not be rebuilt on a
+  // language or unit switch.
+  const period = useMemo(() => {
+    if (!startDate || !endDate) return null;
     const [y, m, d] = endDate.split("-").map(Number);
-    const period = makePeriod(new Date(y, m - 1, d), spanDays(startDate, endDate));
-    const stats = computePeriodStats(viewData, period, DEFAULT_TARGETS);
+    return makePeriod(new Date(y, m - 1, d), spanDays(startDate, endDate));
+  }, [startDate, endDate]);
+
+  // Statistics depend on the data and the period only; language and unit are
+  // display concerns and must not trigger a recomputation over the export.
+  const computed = useMemo(() => {
+    if (!viewData || !period) return null;
     const historic = readingsInPeriod(viewData, period).filter((r) => r.historic);
     return {
+      stats: computePeriodStats(viewData, period, DEFAULT_TARGETS),
+      days: computeDayStats(viewData, period, DEFAULT_TARGETS),
+      agp: computeAgpProfile(historic),
+    };
+  }, [viewData, period]);
+
+  const ctx: ReportContext | null = useMemo(() => {
+    if (!data || !viewData || !period || !computed) return null;
+    const value = {
       data: viewData,
       fullData: data,
       activeSource: sourceFilter,
       onSelectSource: setSourceFilter,
       period,
-      stats,
-      days: computeDayStats(viewData, period, DEFAULT_TARGETS),
-      agp: computeAgpProfile(historic),
+      ...computed,
       targets: DEFAULT_TARGETS,
       lang,
       unit,
@@ -251,9 +296,41 @@ export default function LibreReportPage() {
       patientDob: SHOW_DOB ? formatDisplayDate(patientDob) || "—" : "",
       generatedAt: formatFullDate(new Date(), lang),
     };
-  }, [data, viewData, sourceFilter, startDate, endDate, lang, unit, patientDob]);
+    // Development only matters here: React's dev build diffs a component's
+    // old and new props on every re-render, recursing three levels deep —
+    // exactly far enough to enumerate ctx.data.readings element by element.
+    // Every report takes ctx, so switching source (a new `data`) walked two
+    // 100k-reading arrays per component, ~30 s per click. Non-enumerable
+    // fields are skipped by that diff; reading them is unaffected.
+    Object.defineProperty(value, "data", { enumerable: false });
+    Object.defineProperty(value, "fullData", { enumerable: false });
+    return value;
+  }, [data, viewData, sourceFilter, period, computed, lang, unit, patientDob]);
 
   const show = (id: string) => selectedReport === "all" || selectedReport === id;
+
+  // Keep the chosen tab visible in the scrolling tab strip (on a phone most
+  // of the twelve are off-screen).
+  useEffect(() => {
+    const active = tabsRef.current?.querySelector<HTMLElement>(".lr-tab-active");
+    active?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [selectedReport, lang]);
+
+  // The tab bar is sticky, so a tab can be picked from deep inside a long
+  // report. Bring the top of the newly chosen report into view rather than
+  // leaving the reader at an arbitrary offset into it.
+  const pickReport = (id: string) => {
+    setSelectedReport(id);
+    requestAnimationFrame(() => {
+      const main = reportsRef.current;
+      if (!main) return;
+      const stickyH = tabsRef.current?.getBoundingClientRect().bottom ?? 0;
+      const top = main.getBoundingClientRect().top;
+      if (top < stickyH) window.scrollBy({ top: top - stickyH - 8 });
+    });
+  };
+
+  const unitText = glucoseUnitLabel(unit, lang);
 
   return (
     <div className="lr-root" dir={lang === "ar" ? "rtl" : "ltr"} lang={lang}>
@@ -283,7 +360,36 @@ export default function LibreReportPage() {
           </div>
         </div>
         {data ? (
-        <div className="lr-toolbar-controls">
+          <button
+            type="button"
+            className="lr-settings-summary"
+            aria-expanded={controlsOpen}
+            aria-controls="lr-toolbar-controls"
+            onClick={() => setControlsOpen((o) => !o)}
+          >
+            <span className="lr-settings-summary-text">
+              <span className="lr-settings-summary-label">{t("reportSettings")}</span>
+              <span className="lr-settings-summary-values">
+                {days} {t("days")} ·{" "}
+                <bdi dir="ltr">
+                  {formatDisplayDate(startDate)} – {formatDisplayDate(endDate)}
+                </bdi>{" "}
+                · {unitText}
+                {sourceFilter ? <> · <bdi dir="ltr">{shortSerial(sourceFilter)}</bdi></> : null}
+              </span>
+            </span>
+            <span className="lr-settings-summary-action">
+              {controlsOpen ? t("doneSettings") : t("editSettings")}
+            </span>
+          </button>
+        ) : null}
+        {data ? (
+        <div
+          id="lr-toolbar-controls"
+          className={
+            "lr-toolbar-controls" + (controlsOpen ? " lr-toolbar-controls-open" : "")
+          }
+        >
         <div className="lr-tool">
           <span>{t("reportPeriod")}</span>
           <Select
@@ -407,7 +513,19 @@ export default function LibreReportPage() {
       ) : null}
 
       {error ? <div className="lr-error">{error}</div> : null}
-      {loading ? <div className="lr-loading">…</div> : null}
+      {loading ? (
+        <div className="lr-loading lr-noprint" role="status" aria-live="polite">
+          <span className="lr-spinner" aria-hidden="true" />
+          <div>
+            <b>{t("loadingData")}</b>
+            <small>
+              {fileName ? <bdi dir="ltr">{fileName}</bdi> : null}
+              {fileName ? " · " : null}
+              {t("loadingLocal")}
+            </small>
+          </div>
+        </div>
+      ) : null}
 
       {dragOver ? (
         <div className="lr-drop-overlay lr-noprint" aria-hidden="true">
@@ -467,14 +585,14 @@ export default function LibreReportPage() {
       ) : null}
 
       {ctx ? (
-        <nav className="lr-tabs lr-noprint" aria-label={t("allReports")}>
+        <nav ref={tabsRef} className="lr-tabs lr-noprint" aria-label={t("allReports")}>
           {[{ id: "all", label: "allReports" as LabelKey }, ...REPORTS].map((r) => (
             <button
               key={r.id}
               type="button"
               className={"lr-tab" + (selectedReport === r.id ? " lr-tab-active" : "")}
               aria-current={selectedReport === r.id ? "true" : undefined}
-              onClick={() => setSelectedReport(r.id)}
+              onClick={() => pickReport(r.id)}
             >
               {t(r.label)}
             </button>
@@ -483,7 +601,7 @@ export default function LibreReportPage() {
       ) : null}
 
       {ctx ? (
-        <main className="lr-reports">
+        <main ref={reportsRef} className="lr-reports">
           {show("agp-report") ? <AgpReport ctx={ctx} /> : null}
           {show("pattern-insights") ? <PatternInsightsReport ctx={ctx} /> : null}
           {show("snapshot") ? <SnapshotReport ctx={ctx} /> : null}

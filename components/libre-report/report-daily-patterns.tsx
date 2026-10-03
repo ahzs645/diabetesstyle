@@ -10,7 +10,7 @@ import { AgpChart } from "./charts";
 import type { ReportContext } from "./context";
 import { AppleIcon, DropIcon, LongInsulinIcon, RapidInsulinIcon } from "./icons";
 import { ReportPage } from "./report-header";
-import { hourLabel, LR_COLORS, xForMinutes } from "./primitives";
+import { chartFont, hourLabel, LR_COLORS, xForMinutes } from "./primitives";
 
 export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactElement {
   const t = makeT(ctx.lang);
@@ -36,7 +36,7 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
             <div className="lr-dp-blockvalue">{v === null ? "" : formatGlucose(v, unit, lang)}</div>
           </div>
         ))}
-        <div className="lr-dp-blockcell">
+        <div className="lr-dp-blockcell lr-dp-blockcell-end">
           <div className="lr-dp-blockhour">00:00</div>
         </div>
       </div>
@@ -120,7 +120,7 @@ function CarbsStrip({
               strokeWidth={0.5}
               strokeDasharray="2,3"
             />
-            <text x={xForMinutes(hh * 60, w)} y={-3} fontSize={6.5} fill={LR_COLORS.axisText} textAnchor="middle" direction="ltr">
+            <text x={xForMinutes(hh * 60, w)} y={-3} style={chartFont(6.5)} fill={LR_COLORS.axisText} textAnchor="middle" direction="ltr">
               {hourLabel(hh)}
             </text>
           </g>
@@ -136,7 +136,7 @@ function CarbsStrip({
               </rect>
             );
           })}
-        <text x={-4} y={h + 2} fontSize={7} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
+        <text x={-4} y={h + 2} style={chartFont(7)} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
           0
         </text>
       </g>
@@ -185,7 +185,7 @@ function InsulinStrip({
               strokeWidth={0.5}
               strokeDasharray="2,3"
             />
-            <text x={xForMinutes(hh * 60, w)} y={-3} fontSize={6.5} fill={LR_COLORS.axisText} textAnchor="middle" direction="ltr">
+            <text x={xForMinutes(hh * 60, w)} y={-3} style={chartFont(6.5)} fill={LR_COLORS.axisText} textAnchor="middle" direction="ltr">
               {hourLabel(hh)}
             </text>
           </g>

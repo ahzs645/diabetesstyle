@@ -19,6 +19,10 @@ body {
   --lr-ink: #222;
   --lr-muted: #666;
   --lr-rule: #d5d5d5;
+  /* chart text multiplier (see chartFont in primitives.tsx): the charts
+     carry the printed report's 6–8 unit type, legible on paper but not on
+     a screen; print resets this to 1 */
+  --lr-chart-text: 1.3;
   max-width: 980px;
   margin: 0 auto;
   padding: 12px 16px 48px;
@@ -178,6 +182,10 @@ body {
   margin-inline-start: auto;
   flex: none;
 }
+/* one-line summary of the report settings; only phones use it (below) */
+.lr-settings-summary {
+  display: none;
+}
 .lr-toolbar-controls {
   display: flex;
   flex-wrap: wrap;
@@ -326,6 +334,13 @@ body {
 }
 .lr-date-input:focus {
   outline: none;
+}
+/* `.lr-tool input` styles plain toolbar inputs; the date input sits inside a
+   field that already draws the border, so it must not draw a second one */
+.lr-tool .lr-date-input {
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 .lr-date-input::placeholder {
   color: #aaa;
@@ -486,17 +501,23 @@ body {
   color: var(--lr-muted);
 }
 
-/* ---------------- report tabs ---------------- */
+/* ---------------- report tabs ----------------
+   Sticky, so another report is one tap away from anywhere on the long "all
+   reports" page. On wide screens the tabs wrap so all twelve are visible;
+   a horizontal strip hid the last few behind a scroll nobody noticed. */
 .lr-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  overflow-x: auto;
   margin-bottom: 14px;
   padding: 4px;
   border: 1px solid var(--lr-rule);
   border-radius: 8px;
   background: #ffffff;
-  scrollbar-width: thin;
+  box-shadow: 0 2px 6px rgb(20 40 55 / 6%);
 }
 .lr-tab {
   flex: none;
@@ -530,8 +551,43 @@ body {
   margin-bottom: 12px;
 }
 .lr-loading {
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--lr-rule);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--lr-ink);
+  font-size: 0.85rem;
+}
+.lr-loading small {
+  display: block;
+  margin-top: 2px;
   color: var(--lr-muted);
+  font-size: 0.75rem;
+}
+/* transform-only animation runs on the compositor, so it keeps turning
+   while the main thread is busy parsing a large export */
+.lr-spinner {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 3px solid #dbe8f1;
+  border-top-color: var(--lr-blue);
+  border-radius: 50%;
+  animation: lr-spin 0.8s linear infinite;
+}
+@keyframes lr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lr-spinner {
+    animation-duration: 2.4s;
+  }
 }
 
 /* ---------------- report page chrome ---------------- */
@@ -543,6 +599,14 @@ body {
   padding: 18px 22px 24px;
   margin-bottom: 22px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* "All reports" is a ~30k-node page (the daily log and weekly summary
+     draw a dot per streamed scan). Skipping layout and paint for the
+     reports that are off-screen keeps a language or unit switch from
+     relaying the whole document; `auto` in the intrinsic size remembers
+     each page's real height once it has been seen, so the scrollbar does
+     not jump. Printing turns this off below. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1400px;
 }
 .lr-page-header {
   display: flex;
@@ -682,7 +746,7 @@ body {
   flex: none;
 }
 .lr-tir-thresh {
-  font-size: 7.5px;
+  font-size: calc(7.5px * var(--lr-chart-text, 1));
   fill: #555;
 }
 .lr-tir-labels {
@@ -927,6 +991,7 @@ body {
 .lr-mini-row {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   border-top: 1px solid #eee;
   padding: 3px 0;
 }
@@ -1101,8 +1166,12 @@ body {
   gap: 16px;
   align-items: flex-start;
 }
+/* table-layout: fixed only evens out the columns once the table has a
+   width; without one the weekdays with data grab the space */
 .lr-calendar {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -1117,6 +1186,13 @@ body {
   height: 74px;
   vertical-align: top;
   padding: 0;
+}
+/* a day of the month that lies outside the report period */
+.lr-cal-cell-out {
+  background: #f6f6f6;
+}
+.lr-cal-cell-out .lr-cal-daynum {
+  color: #aaa;
 }
 .lr-cal-inner {
   position: relative;
@@ -1345,6 +1421,7 @@ body {
   .lr-root {
     max-width: none;
     padding: 0;
+    --lr-chart-text: 1;
   }
   .lr-hscroll,
   .lr-dp-headerrow {
@@ -1356,6 +1433,7 @@ body {
     border-radius: 0;
     page-break-after: always;
     margin-bottom: 0;
+    content-visibility: visible;
   }
   .lr-log-day,
   .lr-weekly-row {
@@ -1386,10 +1464,51 @@ body {
     gap: 6px;
   }
   .lr-toolbar-controls {
-    display: grid;
+    display: none;
     grid-template-columns: 1fr 1fr;
     gap: 8px 8px;
     padding-top: 8px;
+  }
+  .lr-toolbar-controls-open {
+    display: grid;
+  }
+  /* collapsed: the controls fold into one tappable line naming the current
+     period, dates and unit, so the report starts on the first screen */
+  .lr-settings-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e3e8ec;
+    border-radius: 6px;
+    background: #f7f9fa;
+    font: inherit;
+    color: var(--lr-ink);
+    text-align: start;
+    cursor: pointer;
+  }
+  .lr-settings-summary-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .lr-settings-summary-label {
+    font-size: 0.68rem;
+    color: var(--lr-muted);
+  }
+  .lr-settings-summary-values {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .lr-settings-summary-action {
+    flex: none;
+    color: var(--lr-blue);
+    font-weight: 700;
+    font-size: 0.82rem;
   }
   .lr-tool {
     min-width: 0;
@@ -1466,9 +1585,28 @@ body {
     font-size: 0.85rem;
   }
 
-  /* report tabs: bigger touch targets, no rubber-banding the page */
+  /* report tabs: on a phone twelve tabs would wrap into a sticky block
+     covering a third of the screen, so they become one scrolling strip.
+     The fade on both edges shows there is more to scroll to. */
   .lr-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
     overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin-inline: -8px;
+    border-radius: 0;
+    border-inline: none;
+    padding-inline: 8px;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 12px,
+      #000 calc(100% - 12px),
+      transparent
+    );
+  }
+  .lr-tabs::-webkit-scrollbar {
+    display: none;
   }
   .lr-tab {
     padding: 9px 14px;
@@ -1545,11 +1683,18 @@ body {
     max-width: none;
   }
 
+  /* stacked columns must stretch: the desktop rule aligns them to the top
+     (flex-start), which in a column layout shrink-wraps each card to its
+     content and leaves ragged half-width boxes */
   .lr-columns,
   .lr-snapshot-grid,
   .lr-snapshot-row,
   .lr-monthly-wrap {
     flex-direction: column;
+    align-items: stretch;
+  }
+  .lr-cal-cell {
+    height: 64px;
   }
   .lr-snapshot-row .lr-snapchart {
     max-width: none;
@@ -1613,9 +1758,45 @@ body {
     flex: 0 1 auto;
   }
 
-  /* daily log: hourly min/max table scrolls sideways instead of crushing */
+  /* daily log: hourly min/max table scrolls sideways instead of crushing.
+     The row labels stay pinned so a scrolled row still says what it is. */
   .lr-hscroll .lr-hourly-table {
     min-width: 560px;
+  }
+  .lr-hourly-head {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+  }
+
+  /* daily patterns: twelve two-hour blocks cannot share a phone's width
+     with the daily average; give the average its own row and the blocks
+     two rows of six, so every value is on screen without scrolling */
+  .lr-dp-headerrow {
+    flex-wrap: wrap;
+    gap: 4px 2px;
+    overflow-x: visible;
+  }
+  .lr-dp-headerrow .lr-dp-avgcell {
+    flex: 1 0 100%;
+    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .lr-dp-headerrow .lr-dp-avgvalue {
+    min-width: 74px;
+  }
+  .lr-dp-headerrow .lr-dp-blockcell {
+    flex: 1 0 calc((100% - 10px) / 6);
+    min-width: 0;
+  }
+  /* the closing "00:00" only marks the chart's right edge on the
+     single-row layout; wrapped, it would start a third row of its own */
+  .lr-dp-headerrow .lr-dp-blockcell-end {
+    display: none;
   }
 
   /* daily patterns: stack the row label above its chart */

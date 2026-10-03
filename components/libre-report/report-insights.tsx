@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import {
+  deviceList,
   formatGlucose,
   formatNumber,
   formatPct,
@@ -142,7 +143,7 @@ export function PatternInsightsReport({ ctx }: { ctx: ReportContext }): ReactEle
 
       <div className="lr-footer-notes">
         <div>
-          {t("devicesLabel")}: {ctx.data.devices.join("، ") || "—"}
+          {t("devicesLabel")}: {deviceList(ctx.data.devices, ctx.lang)}
         </div>
         <div>{t("considerationsFootnote")}</div>
       </div>

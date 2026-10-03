@@ -57,8 +57,11 @@ export function DailyLogReport({ ctx }: { ctx: ReportContext }): ReactElement {
                 />
               )}
             </AutoWidth>
-            <div className="lr-hscroll">
-              <table className="lr-hourly-table" dir="ltr">
+            {/* ltr on the scroller too: inside an RTL page an overflowing
+                strip opens scrolled to its far (23:00) end, hiding the
+                Max/Min labels and the morning hours */}
+            <div className="lr-hscroll" dir="ltr">
+              <table className="lr-hourly-table">
                 <tbody>
                   <tr>
                     <th className="lr-hourly-head">{t("maxLabel")}</th>

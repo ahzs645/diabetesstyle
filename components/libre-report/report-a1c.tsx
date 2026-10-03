@@ -147,8 +147,13 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
     () => data.readings.filter((r) => r.historic),
     [data],
   );
-  const scanCount = readingsInPeriod(data, period).filter((r) => !r.historic).length;
-  const totals = useMemo(() => periodTotals(historic, period), [historic, period]);
+  const inPeriod = useMemo(() => readingsInPeriod(data, period), [data, period]);
+  const periodHistoric = useMemo(() => inPeriod.filter((r) => r.historic), [inPeriod]);
+  const scanCount = inPeriod.length - periodHistoric.length;
+  const totals = useMemo(
+    () => periodTotals(periodHistoric, period),
+    [periodHistoric, period],
+  );
   // How much of the claimed window actually carries readings. A mean over a
   // thin slice still renders as a confident number, so say when it is one.
   const coverage = useMemo(() => mergedWindow(data, period), [data, period]);
@@ -164,8 +169,8 @@ export function EstimatedA1cReport({ ctx }: { ctx: ReportContext }): ReactElemen
 
   // report-period daily series (for the bar chart and cumulative build-up)
   const periodDaily = useMemo(
-    () => dailyMeans(historic, period.start, period.end),
-    [historic, period],
+    () => dailyMeans(periodHistoric, period.start, period.end),
+    [periodHistoric, period],
   );
   const cumulative = useMemo(() => cumulativeEa1c(periodDaily), [periodDaily]);
   const trailing = useMemo(
