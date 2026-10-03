@@ -7,6 +7,7 @@ import {
 } from "../../lib/libre-report/i18n";
 import { minutesOfDay } from "../../lib/libre-report/stats";
 import type { FoodEntry } from "../../lib/libre-report/types";
+import { AutoWidth } from "./auto-width";
 import { MealPeriodChart } from "./charts";
 import type { ReportContext } from "./context";
 import { AppleIcon, DropIcon, MealPeriodIcon, RapidInsulinIcon } from "./icons";
@@ -80,15 +81,26 @@ export function MealtimePatternsReport({ ctx }: { ctx: ReportContext }): ReactEl
                 ({String(p.fromH).padStart(2, "0")}:00 - {String(p.toH).padStart(2, "0")}:00)
               </span>
             </div>
-            <MealPeriodChart
-              lang={lang}
-              unit={unit}
-              showSideLabels={i === 0 ? "pre" : i === MEAL_PERIODS.length - 1 ? "post" : undefined}
-              mealCurves={mealCurve(
-                ctx,
-                mealsInPeriod.filter((m) => inMealPeriod(m.time, p)),
+            {/* real width, so its text is not shrunk with a fixed drawing
+                (a phone's two-column grid scaled it to ~5px); print keeps
+                the original 170 × 150 */}
+            <AutoWidth min={120} printWidth={170}>
+              {(w) => (
+                <MealPeriodChart
+                  lang={lang}
+                  unit={unit}
+                  width={w}
+                  height={Math.round((w * 150) / 170)}
+                  showSideLabels={
+                    i === 0 ? "pre" : i === MEAL_PERIODS.length - 1 ? "post" : undefined
+                  }
+                  mealCurves={mealCurve(
+                    ctx,
+                    mealsInPeriod.filter((m) => inMealPeriod(m.time, p)),
+                  )}
+                />
               )}
-            />
+            </AutoWidth>
             <div className="lr-meal-cols">
               <span title={t("glucoseReading")}><DropIcon /></span>
               <span title={t("glucoseReading")}><DropIcon /></span>

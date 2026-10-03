@@ -1,6 +1,17 @@
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 import type { GlucoseReading } from "../../lib/libre-report/types";
 import { minutesOfDay } from "../../lib/libre-report/stats";
+
+/**
+ * Chart text size. `size` is the printed report's size in SVG user units;
+ * on screen it is multiplied by `--lr-chart-text` (set on .lr-root), which
+ * print resets to 1, so printouts keep the paper's proportions while screen
+ * text is no longer 6–7px. CSS outranks the SVG presentation attribute and,
+ * like it, is scaled by the viewBox.
+ */
+export function chartFont(size: number): CSSProperties {
+  return { fontSize: `calc(${size}px * var(--lr-chart-text, 1))` };
+}
 
 /**
  * LibreView report palette. These are the clinically standardized
@@ -128,7 +139,7 @@ export function TimeGrid({
           <text
             x={x}
             y={labelY ?? height + 11}
-            fontSize={7.5}
+            style={chartFont(7.5)}
             fill={LR_COLORS.axisText}
             textAnchor="middle"
             direction="ltr"
@@ -206,7 +217,7 @@ export function GlucoseTicks({
           key={tick}
           x={x}
           y={yForGlucose(tick, yMax, height) + 2.5}
-          fontSize={7.5}
+          style={chartFont(7.5)}
           fontWeight={bold.includes(tick) ? 700 : 400}
           fill={bold.includes(tick) ? LR_COLORS.ink : LR_COLORS.axisText}
           textAnchor="end"

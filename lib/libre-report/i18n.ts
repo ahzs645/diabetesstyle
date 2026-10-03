@@ -2,6 +2,14 @@
  * Bilingual labels for the LibreView-style report. Arabic strings are taken
  * verbatim from the printed Arabic report; English strings from the printed
  * English report of the same product.
+ *
+ * One exception to "verbatim": comparison signs. <, >, ≤ and ≥ are Unicode
+ * mirrored characters — in right-to-left text the browser draws ">" with the
+ * "<" glyph, exactly as the printed report does. Copying the glyph seen on
+ * the printout therefore stores the OPPOSITE sign: it then renders flipped
+ * against the rest of the Arabic report and a screen reader announces "less
+ * than" for high glucose. Every sign is stored by meaning, the same character
+ * as the English string (enforced by i18n.test.ts).
  */
 
 export type ReportLang = "ar" | "en";
@@ -71,7 +79,7 @@ const dict = {
   gmi: { ar: "مؤشر إدارة الجلوكوز (GMI)", en: "Glucose Management Indicator (GMI)" },
   glucoseVariability: { ar: "التغير في نسبة الجلوكوز بالدم", en: "Glucose Variability" },
   cvDefinition: {
-    ar: "؛ يُعرّف بأنه معامل التباين بالنسبة المئوية (CV%)؛ الهدف ≥36%",
+    ar: "يُعرّف بأنه معامل التباين بالنسبة المئوية (CV%)؛ الهدف ≤36%",
     en: "Defined as percent coefficient of variation (%CV); target ≤36%",
   },
   veryHigh: { ar: "مرتفع للغاية", en: "Very High" },
@@ -148,8 +156,8 @@ const dict = {
   maxLabel: { ar: "الحد الأقصى", en: "Max" },
   minLabel: { ar: "الحد الأدنى", en: "Min" },
   legend: { ar: "السرد", en: "Legend" },
-  highGlucoseLegend: { ar: "جلوكوز مرتفع (<{v})", en: "High Glucose (>{v})" },
-  lowGlucoseLegend: { ar: "جلوكوز منخفض (>{v})", en: "Low Glucose (<{v})" },
+  highGlucoseLegend: { ar: "جلوكوز مرتفع (>{v})", en: "High Glucose (>{v})" },
+  lowGlucoseLegend: { ar: "جلوكوز منخفض (<{v})", en: "Low Glucose (<{v})" },
   scansViews: { ar: "الفحوصات/ العروض", en: "Scans/Views" },
   logged: { ar: "مسجل", en: "Logged" },
   postMealPeak: { ar: "ذروة بعد الوجبة", en: "Post-Meal Peak" },
@@ -442,6 +450,9 @@ const dict = {
 } as const;
 
 export type LabelKey = keyof typeof dict;
+
+/** Every label key, for checks that must cover the whole dictionary. */
+export const LABEL_KEYS = Object.keys(dict) as LabelKey[];
 
 export function makeT(lang: ReportLang) {
   return (key: LabelKey, vars?: Record<string, string | number>): string => {

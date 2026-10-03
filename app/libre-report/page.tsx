@@ -103,6 +103,10 @@ export default function LibreReportPage() {
   // show them (the summary button is hidden there by CSS).
   const [controlsOpen, setControlsOpen] = useState(false);
   const tabsRef = useRef<HTMLElement>(null);
+  // The load in flight, if any. Starting another load aborts it, so only the
+  // most recent file or URL ever reaches the reports — whichever of two
+  // overlapping loads happened to finish last no longer wins.
+  const activeLoad = useRef<AbortController | null>(null);
   const reportsRef = useRef<HTMLElement>(null);
 
   const t = makeT(lang);
@@ -146,39 +150,53 @@ export default function LibreReportPage() {
     document.title = lang === "ar" ? "تقارير الجلوكوز" : "Glucose Reports";
   }, [lang]);
 
+  /** Abort whatever is loading and claim the loading state for a new load. */
+  const beginLoad = useCallback((name: string): AbortSignal => {
+    activeLoad.current?.abort();
+    const load = new AbortController();
+    activeLoad.current = load;
+    setLoading(true);
+    setError(null);
+    setFileName(name);
+    return load.signal;
+  }, []);
+
   const onUpload = useCallback(
     async (file: File) => {
-      setLoading(true);
+      const signal = beginLoad(file.name);
       try {
-        setFileName(file.name);
-        applyData(parseLibreExport(await file.text()));
+        const text = await file.text();
+        if (signal.aborted) return;
+        applyData(parseLibreExport(text));
       } catch (e) {
+        if (signal.aborted) return;
         setError(e instanceof Error ? e.message : String(e));
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
-    [applyData],
+    [applyData, beginLoad],
   );
 
   const loadFromUrl = useCallback(
     async (url: string) => {
-      setLoading(true);
-      setError(null);
       const name = url.split("/").pop()?.split("?")[0];
-      setFileName(name ? decodeURIComponent(name) : url);
+      const signal = beginLoad(name ? decodeURIComponent(name) : url);
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, { signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        applyData(parseLibreExport(await res.text()));
+        const text = await res.text();
+        if (signal.aborted) return;
+        applyData(parseLibreExport(text));
       } catch (e) {
+        if (signal.aborted) return;
         const detail = e instanceof Error ? e.message : String(e);
         setError(`${makeT(lang)("fetchCsvError")}: ${detail}`);
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     },
-    [applyData, lang],
+    [applyData, beginLoad, lang],
   );
 
   // ?csv=<url> loads that export on startup; with the DOB flag enabled,
@@ -194,6 +212,12 @@ export default function LibreReportPage() {
         if (iso) setPatientDob(iso);
       }
     }
+    // Abort on unmount. In development StrictMode mounts twice; without
+    // this both mounts fetched and parsed the export, and the second result
+    // re-rendered every report with a new ctx — React's dev-only prop diff
+    // then walked the old and new 100k-reading arrays (≈30 s on a large
+    // export).
+    return () => activeLoad.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
@@ -258,7 +282,7 @@ export default function LibreReportPage() {
 
   const ctx: ReportContext | null = useMemo(() => {
     if (!data || !viewData || !period || !computed) return null;
-    return {
+    const value = {
       data: viewData,
       fullData: data,
       activeSource: sourceFilter,
@@ -272,6 +296,15 @@ export default function LibreReportPage() {
       patientDob: SHOW_DOB ? formatDisplayDate(patientDob) || "—" : "",
       generatedAt: formatFullDate(new Date(), lang),
     };
+    // Development only matters here: React's dev build diffs a component's
+    // old and new props on every re-render, recursing three levels deep —
+    // exactly far enough to enumerate ctx.data.readings element by element.
+    // Every report takes ctx, so switching source (a new `data`) walked two
+    // 100k-reading arrays per component, ~30 s per click. Non-enumerable
+    // fields are skipped by that diff; reading them is unaffected.
+    Object.defineProperty(value, "data", { enumerable: false });
+    Object.defineProperty(value, "fullData", { enumerable: false });
+    return value;
   }, [data, viewData, sourceFilter, period, computed, lang, unit, patientDob]);
 
   const show = (id: string) => selectedReport === "all" || selectedReport === id;

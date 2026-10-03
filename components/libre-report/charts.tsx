@@ -17,6 +17,7 @@ import {
 } from "../../lib/libre-report/i18n";
 import {
   bandPath,
+  chartFont,
   dayCurvePath,
   GlucoseTicks,
   hourLabel,
@@ -323,7 +324,8 @@ export function AgpChart({
         {showTargetBracket ? (
           <g>
             <path
-              d={`M-26,${y(targets.high)} h6 M-26,${y(targets.low)} h6 M-26,${y(targets.high)} v${y(targets.low) - y(targets.high)}`}
+              // far enough out to clear a bold "180" / "10,0" at screen size
+              d={`M-32,${y(targets.high)} h5 M-32,${y(targets.low)} h5 M-32,${y(targets.high)} v${y(targets.low) - y(targets.high)}`}
               stroke={LR_COLORS.targetLine}
               strokeWidth={1.4}
               fill="none"
@@ -334,7 +336,8 @@ export function AgpChart({
           <g>
             {spreadPositions(
               pctLabels.map((p) => y(p.value)),
-              9,
+              // a line of the screen-size label text
+              11,
               4,
               h - 2,
             ).map((yy, i) => ({ ...pctLabels[i], yy })).map((p) => (
@@ -342,7 +345,7 @@ export function AgpChart({
                 key={p.label}
                 x={w + 6}
                 y={p.yy + 3}
-                fontSize={p.strong ? 9 : 8}
+                style={chartFont(p.strong ? 9 : 8)}
                 fontWeight={p.strong ? 700 : 400}
                 fill={p.strong ? LR_COLORS.median : LR_COLORS.axisText}
                 direction="ltr"
@@ -356,7 +359,7 @@ export function AgpChart({
       <text
         x={margin.left - 4}
         y={margin.top + 13}
-        fontSize={6.5}
+        style={chartFont(6.5)}
         fill={LR_COLORS.axisText}
         textAnchor="end"
       >
@@ -451,15 +454,17 @@ export function DayChart({
           </g>
         ))}
         <GlucoseTicks ticks={[0, targets.low, targets.high, yMax]} yMax={yMax} height={h} x={-4} bold={[targets.low, targets.high]} format={g} />
-        {/* hour labels every 2h at the top, like the printed daily log */}
+        {/* hour labels every 2h at the top, like the printed daily log. The
+            two midnights are anchored inward: centred, the first one sat on
+            top of the "350" tick and the last one ran off the edge. */}
         {Array.from({ length: 24 / labelStep + 1 }, (_, i) => i * labelStep).map((hh) => (
           <text
             key={hh}
             x={xForMinutes(hh * 60, w)}
             y={-3}
-            fontSize={6.5}
+            style={chartFont(6.5)}
             fill={LR_COLORS.axisText}
-            textAnchor="middle"
+            textAnchor={hh === 0 ? "start" : hh === 24 ? "end" : "middle"}
             direction="ltr"
           >
             {hourLabel(hh)}
@@ -547,16 +552,19 @@ export function DailyProfileThumb({
         </g>
       ))}
       <path d={dayCurvePath(historic, w, h, yMax)} fill="none" stroke={LR_COLORS.dayLine} strokeWidth={1.1} />
-      <rect x={0.5} y={0.5} width={13} height={10} fill="#ffffff" stroke="#c8c8c8" strokeWidth={0.6} />
-      <text x={7} y={8.2} fontSize={7} fontWeight={600} textAnchor="middle" fill={LR_COLORS.ink} direction="ltr">
+      {/* The date badge is sized in em of its own text, so it grows with
+          the on-screen text scale; at print scale (7px) these are exactly
+          the original 13 × 10 box and (7, 8.2) baseline. */}
+      <rect x={0.5} y={0.5} width="1.857em" height="1.429em" style={chartFont(7)} fill="#ffffff" stroke="#c8c8c8" strokeWidth={0.6} />
+      <text x="1em" y="1.171em" style={chartFont(7)} fontWeight={600} textAnchor="middle" fill={LR_COLORS.ink} direction="ltr">
         {dayNumber}
       </text>
       {showYLabels ? (
         <g>
-          <text x={2} y={yHigh - 1.5} fontSize={5.5} fill={LR_COLORS.axisText} direction="ltr">
+          <text x={2} y={yHigh - 1.5} style={chartFont(5.5)} fill={LR_COLORS.axisText} direction="ltr">
             {formatGlucose(targets.high, unit, lang)}
           </text>
-          <text x={2} y={yLow + 6} fontSize={5.5} fill={LR_COLORS.axisText} direction="ltr">
+          <text x={2} y={yLow + 6} style={chartFont(5.5)} fill={LR_COLORS.axisText} direction="ltr">
             {formatGlucose(targets.low, unit, lang)}
           </text>
         </g>
@@ -594,7 +602,7 @@ export function MedianChart({
   const y = (v: number) => yForGlucose(v, yMax, h);
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="lr-snapchart" role="img" aria-label={t("averageGlucose")}>
-      <text x={margin.left + w / 2} y={9} fontSize={8} textAnchor="middle" fill={LR_COLORS.ink}>
+      <text x={margin.left + w / 2} y={9} style={chartFont(8)} textAnchor="middle" fill={LR_COLORS.ink}>
         {t("averageGlucose")}
       </text>
       <g transform={`translate(${margin.left},${margin.top})`}>
@@ -634,7 +642,7 @@ export function LowEventsChart({
   const y = (v: number) => h - ((Math.min(Math.max(v, yMin), yMax) - yMin) / (yMax - yMin)) * h;
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="lr-snapchart" role="img" aria-label={t("lowGlucoseEvents")}>
-      <text x={margin.left + w / 2} y={9} fontSize={8} textAnchor="middle" fill={LR_COLORS.ink}>
+      <text x={margin.left + w / 2} y={9} style={chartFont(8)} textAnchor="middle" fill={LR_COLORS.ink}>
         {t("lowGlucoseEvents")}
       </text>
       <g transform={`translate(${margin.left},${margin.top})`}>
@@ -642,7 +650,7 @@ export function LowEventsChart({
         <TimeGrid width={w} height={h} stepHours={6} />
         {[40, 50, 60, 70, 80, 90, 100].map((tick) => (
           <g key={tick}>
-            <text x={-4} y={y(tick) + 2.5} fontSize={7} fill={tick === threshold ? LR_COLORS.low : LR_COLORS.axisText} textAnchor="end" direction="ltr">
+            <text x={-4} y={y(tick) + 2.5} style={chartFont(7)} fill={tick === threshold ? LR_COLORS.low : LR_COLORS.axisText} textAnchor="end" direction="ltr">
               {formatGlucose(tick, unit, lang)}
             </text>
           </g>
@@ -685,14 +693,14 @@ export function SensorUsageChart({
   const ys = usage.map((u) => h - (u / 100) * h);
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="lr-snapchart" role="img" aria-label={t("pctTimeActive")}>
-      <text x={margin.left + w / 2} y={9} fontSize={8} textAnchor="middle" fill={LR_COLORS.ink}>
+      <text x={margin.left + w / 2} y={9} style={chartFont(8)} textAnchor="middle" fill={LR_COLORS.ink}>
         {t("pctTimeActive")}
       </text>
       <g transform={`translate(${margin.left},${margin.top})`}>
         <rect x={0} y={0} width={w} height={h} fill="#ffffff" stroke={LR_COLORS.gridLine} strokeWidth={0.7} />
         <TimeGrid width={w} height={h} stepHours={6} />
         {[0, 50, 100].map((tick) => (
-          <text key={tick} x={-4} y={h - (tick / 100) * h + 2.5} fontSize={7} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
+          <text key={tick} x={-4} y={h - (tick / 100) * h + 2.5} style={chartFont(7)} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
             {formatPct(tick, lang)}
           </text>
         ))}
@@ -768,11 +776,11 @@ export function PatternsScatterChart({
         ))}
         {/* target boundary chips */}
         <rect x={-26} y={y(targets.high) - 5} width={24} height={10} rx={2} fill={LR_COLORS.target} />
-        <text x={-14} y={y(targets.high) + 3} fontSize={7} fill="#ffffff" textAnchor="middle" direction="ltr">
+        <text x={-14} y={y(targets.high) + 3} style={chartFont(7)} fill="#ffffff" textAnchor="middle" direction="ltr">
           {g(targets.high)}
         </text>
         <rect x={-26} y={y(targets.low) - 5} width={24} height={10} rx={2} fill={LR_COLORS.target} />
-        <text x={-14} y={y(targets.low) + 3} fontSize={7} fill="#ffffff" textAnchor="middle" direction="ltr">
+        <text x={-14} y={y(targets.low) + 3} style={chartFont(7)} fill="#ffffff" textAnchor="middle" direction="ltr">
           {g(targets.low)}
         </text>
         <line x1={0} y1={y(targets.high)} x2={w} y2={y(targets.high)} stroke={LR_COLORS.target} strokeWidth={1.2} />
@@ -782,9 +790,9 @@ export function PatternsScatterChart({
             <path d={linePath(xs, profile.p50.map(y))} fill="none" stroke="#2e7d32" strokeWidth={2} />
             <path d={linePath(xs, profile.p5.map(y))} fill="none" stroke="#8a8a8a" strokeWidth={0.9} strokeDasharray="3,2" />
             <path d={linePath(xs, profile.p95.map(y))} fill="none" stroke="#8a8a8a" strokeWidth={0.9} strokeDasharray="3,2" />
-            <text x={w + 4} y={y(profile.p95[profile.p95.length - 1]) + 2} fontSize={7.5} fill={LR_COLORS.axisText} direction="ltr">95%</text>
-            <text x={w + 4} y={y(profile.p50[profile.p50.length - 1]) + 2} fontSize={8} fontWeight={700} fill="#2e7d32" direction="ltr">50%</text>
-            <text x={w + 4} y={y(profile.p5[profile.p5.length - 1]) + 2} fontSize={7.5} fill={LR_COLORS.axisText} direction="ltr">5%</text>
+            <text x={w + 4} y={y(profile.p95[profile.p95.length - 1]) + 2} style={chartFont(7.5)} fill={LR_COLORS.axisText} direction="ltr">95%</text>
+            <text x={w + 4} y={y(profile.p50[profile.p50.length - 1]) + 2} style={chartFont(8)} fontWeight={700} fill="#2e7d32" direction="ltr">50%</text>
+            <text x={w + 4} y={y(profile.p5[profile.p5.length - 1]) + 2} style={chartFont(7.5)} fill={LR_COLORS.axisText} direction="ltr">5%</text>
           </g>
         ) : null}
         {/* period strip */}
@@ -803,7 +811,7 @@ export function PatternsScatterChart({
               <text
                 x={xForMinutes(((p.from + p.to) / 2) * 60, w)}
                 y={h + 9}
-                fontSize={7}
+                style={chartFont(7)}
                 textAnchor="middle"
                 fill={LR_COLORS.ink}
               >
@@ -816,7 +824,7 @@ export function PatternsScatterChart({
               key={hh}
               x={xForMinutes(hh * 60, w)}
               y={h + 24}
-              fontSize={7.5}
+              style={chartFont(7.5)}
               fill={hh % 12 === 0 ? LR_COLORS.ink : LR_COLORS.axisText}
               fontWeight={hh % 12 === 0 ? 700 : 400}
               textAnchor="middle"
@@ -855,7 +863,8 @@ export function MealPeriodChart({
   mealCurves?: { relMinutes: number[]; values: number[] } | null;
 }): ReactElement {
   const t = makeT(lang);
-  const margin = { left: 20, right: 16, top: 6, bottom: 26 };
+  // right: room for the bold 180/100 target labels on the last panel
+  const margin = { left: 20, right: 22, top: 6, bottom: 26 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
   const yMax = 350;
@@ -883,32 +892,41 @@ export function MealPeriodChart({
             strokeWidth={1.6}
           />
         ) : null}
-        {[0, 50, 150, 250, 350].map((tick) => (
-          <text key={tick} x={-3} y={y(tick) + 2.5} fontSize={6.5} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
+        {[0, 50, 150, 250, 350]
+          // The first panel prints the 130/70 targets in the same column as
+          // the ticks, 20 mg/dL from 150 and 50; drop a tick that would
+          // collide with a target label rather than print the two overlapped.
+          .filter(
+            (tick) =>
+              showSideLabels !== "pre" ||
+              [130, 70].every((v) => Math.abs(y(tick) - y(v)) >= 9),
+          )
+          .map((tick) => (
+          <text key={tick} x={-3} y={y(tick) + 2.5} style={chartFont(6.5)} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
             {g(tick)}
           </text>
         ))}
         {showSideLabels === "pre" ? (
           <g>
-            <text x={-3} y={y(130) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">{g(130)}</text>
-            <text x={-3} y={y(70) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">{g(70)}</text>
+            <text x={-3} y={y(130) + 2.5} style={chartFont(6.5)} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">{g(130)}</text>
+            <text x={-3} y={y(70) + 2.5} style={chartFont(6.5)} fontWeight={700} fill={LR_COLORS.ink} textAnchor="end" direction="ltr">{g(70)}</text>
           </g>
         ) : null}
         {showSideLabels === "post" ? (
           <g>
-            <text x={w + 3} y={y(180) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(180)}</text>
-            <text x={w + 3} y={y(100) + 2.5} fontSize={6.5} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(100)}</text>
+            <text x={w + 3} y={y(180) + 2.5} style={chartFont(6.5)} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(180)}</text>
+            <text x={w + 3} y={y(100) + 2.5} style={chartFont(6.5)} fontWeight={700} fill={LR_COLORS.ink} direction="ltr">{g(100)}</text>
           </g>
         ) : null}
         <GlyphApple x={x(0)} y={h + 11} size={8} />
-        <text x={x(-60) + (x(0) - x(-60)) / 2} y={h + 20} fontSize={6} fill={LR_COLORS.axisText} textAnchor="middle">
+        <text x={x(-60) + (x(0) - x(-60)) / 2} y={h + 20} style={chartFont(6)} fill={LR_COLORS.axisText} textAnchor="middle">
           {t("preMeal")}
         </text>
-        <text x={x(0) + (x(180) - x(0)) / 2} y={h + 20} fontSize={6} fill={LR_COLORS.axisText} textAnchor="middle">
+        <text x={x(0) + (x(180) - x(0)) / 2} y={h + 20} style={chartFont(6)} fill={LR_COLORS.axisText} textAnchor="middle">
           {t("postMeal")}
         </text>
         {[-60, 60, 120, 180].map((rel) => (
-          <text key={rel} x={x(rel)} y={h + 10} fontSize={5.5} fill={LR_COLORS.axisText} textAnchor="middle" direction="ltr">
+          <text key={rel} x={x(rel)} y={h + 10} style={chartFont(5.5)} fill={LR_COLORS.axisText} textAnchor="middle" direction="ltr">
             {rel === -60 ? (lang === "ar" ? "1- ساعة" : "-1hr") : lang === "ar" ? `${rel / 60}+ ساعة` : `+${rel / 60}hr`}
           </text>
         ))}
@@ -992,7 +1010,7 @@ export function DailyMeanBarChart({
             key={i}
             x={i * slot + slot / 2}
             y={h + 12}
-            fontSize={7.5}
+            style={chartFont(7.5)}
             fill={LR_COLORS.axisText}
             textAnchor="middle"
           >
@@ -1034,7 +1052,7 @@ export function Ea1cLineChart({
   if (values.length === 0) {
     return (
       <svg viewBox={`0 0 ${width} ${height}`} className="lr-a1c-chart" role="img">
-        <text x={width / 2} y={height / 2} fontSize={9} textAnchor="middle" fill={LR_COLORS.axisText}>
+        <text x={width / 2} y={height / 2} style={chartFont(9)} textAnchor="middle" fill={LR_COLORS.axisText}>
           {t("noData")}
         </text>
       </svg>
@@ -1082,7 +1100,7 @@ export function Ea1cLineChart({
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={0} y1={y(tick)} x2={w} y2={y(tick)} stroke={LR_COLORS.gridLine} strokeWidth={0.6} strokeDasharray="2,3" />
-            <text x={-4} y={y(tick) + 2.5} fontSize={7.5} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
+            <text x={-4} y={y(tick) + 2.5} style={chartFont(7.5)} fill={LR_COLORS.axisText} textAnchor="end" direction="ltr">
               {formatPct(tick, lang, step < 0.25 ? 2 : 1)}
             </text>
           </g>
@@ -1095,7 +1113,7 @@ export function Ea1cLineChart({
         <text
           x={x(lastIdx) + 4}
           y={y(last.ea1cPercent) - 5}
-          fontSize={8.5}
+          style={chartFont(8.5)}
           fontWeight={700}
           fill={LR_COLORS.median}
           direction="ltr"
@@ -1122,7 +1140,7 @@ export function Ea1cLineChart({
         {dayLabelIndexes(points.length, width < 460 ? 4 : 6).map((i) => {
           const p = points[i];
           return p === null ? null : (
-            <text key={i} x={x(i)} y={h + 12} fontSize={7.5} fill={LR_COLORS.axisText} textAnchor="middle">
+            <text key={i} x={x(i)} y={h + 12} style={chartFont(7.5)} fill={LR_COLORS.axisText} textAnchor="middle">
               {formatDayMonth(p.day, lang)}
             </text>
           );
@@ -1183,7 +1201,7 @@ export function SourceTimelineChart({
   if (rows.length === 0) {
     return (
       <svg viewBox={`0 0 ${width} 40`} className="lr-src-timeline" role="img">
-        <text x={width / 2} y={22} fontSize={9} textAnchor="middle" fill={LR_COLORS.axisText}>
+        <text x={width / 2} y={22} style={chartFont(9)} textAnchor="middle" fill={LR_COLORS.axisText}>
           {t("noData")}
         </text>
       </svg>
@@ -1239,7 +1257,7 @@ export function SourceTimelineChart({
               <text
                 x={-6}
                 y={y + laneH / 2 + 3}
-                fontSize={8}
+                style={chartFont(8)}
                 fill={LR_COLORS.ink}
                 textAnchor="end"
                 direction="ltr"
@@ -1256,7 +1274,7 @@ export function SourceTimelineChart({
             key={k}
             x={x(i) + colW / 2}
             y={h + 12}
-            fontSize={7.5}
+            style={chartFont(7.5)}
             fill={LR_COLORS.axisText}
             textAnchor="middle"
           >
