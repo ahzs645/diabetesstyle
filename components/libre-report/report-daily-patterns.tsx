@@ -36,7 +36,7 @@ export function DailyPatternsReport({ ctx }: { ctx: ReportContext }): ReactEleme
             <div className="lr-dp-blockvalue">{v === null ? "" : formatGlucose(v, unit, lang)}</div>
           </div>
         ))}
-        <div className="lr-dp-blockcell">
+        <div className="lr-dp-blockcell lr-dp-blockcell-end">
           <div className="lr-dp-blockhour">00:00</div>
         </div>
       </div>

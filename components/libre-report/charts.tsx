@@ -393,7 +393,8 @@ export function DayChart({
   showScans?: boolean;
   markers?: { minutes: number; label: string; kind: "food" | "insulin" | "note" }[];
 }): ReactElement {
-  const margin = { left: 30, right: 6, top: 10, bottom: 14 };
+  // right: half of the centred "00:00" label over the last gridline
+  const margin = { left: 30, right: 12, top: 10, bottom: 14 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
   const labelStep = width < 460 ? 4 : 2;
@@ -584,7 +585,8 @@ export function MedianChart({
   height?: number;
 }): ReactElement {
   const t = makeT(lang);
-  const margin = { left: 30, right: 8, top: 14, bottom: 16 };
+  // right: half of the centred "00:00" label under the last gridline
+  const margin = { left: 30, right: 14, top: 14, bottom: 16 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
   const yMax = 350;
@@ -623,7 +625,8 @@ export function LowEventsChart({
   threshold?: number;
 }): ReactElement {
   const t = makeT(lang);
-  const margin = { left: 30, right: 8, top: 14, bottom: 16 };
+  // right: half of the centred "00:00" label under the last gridline
+  const margin = { left: 30, right: 14, top: 14, bottom: 16 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
   const yMin = 40;
@@ -674,7 +677,8 @@ export function SensorUsageChart({
   height?: number;
 }): ReactElement {
   const t = makeT(lang);
-  const margin = { left: 34, right: 8, top: 14, bottom: 16 };
+  // right: half of the centred "00:00" label under the last gridline
+  const margin = { left: 34, right: 14, top: 14, bottom: 16 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
   const xs = usage.map((_, i) => (i / (usage.length - 1)) * w);
@@ -943,7 +947,8 @@ export function DailyMeanBarChart({
   height?: number;
 }): ReactElement {
   const t = makeT(lang);
-  const margin = { left: 34, right: 8, top: 8, bottom: 18 };
+  // right: room for half a centred date label ("30 سبتمبر") on the last bar
+  const margin = { left: 34, right: 20, top: 8, bottom: 18 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
   const maxMean = Math.max(targets.high, ...daily.map((d) => d.meanMgdl ?? 0));

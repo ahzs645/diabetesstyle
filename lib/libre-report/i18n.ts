@@ -423,6 +423,17 @@ const dict = {
   startDate: { ar: "تاريخ البدء", en: "Start date" },
   endDate: { ar: "تاريخ الانتهاء", en: "End date" },
   allReports: { ar: "كل التقارير", en: "All reports" },
+  reportSettings: { ar: "إعدادات التقرير", en: "Report settings" },
+  editSettings: { ar: "تعديل", en: "Edit" },
+  doneSettings: { ar: "تم", en: "Done" },
+  loadingData: {
+    ar: "جارٍ قراءة الملف وتحليل القراءات…",
+    en: "Reading the file and analysing readings…",
+  },
+  loadingLocal: {
+    ar: "تتم المعالجة على جهازك فقط.",
+    en: "Processing happens on your device only.",
+  },
   patient: { ar: "المريض", en: "Patient" },
   noData: {
     ar: "لا توجد بيانات في الفترة المحددة.",
@@ -495,6 +506,29 @@ export function formatGlucose(
 /** The label for a glucose unit ("mg/dL" / "ملجم/ديسيلتر" or "mmol/L" / "ملمول/لتر"). */
 export function glucoseUnitLabel(unit: GlucoseUnit, lang: ReportLang): string {
   return dict[unit === "mmol/L" ? "mmolL" : "mgdl"][lang];
+}
+
+/**
+ * Device names arrive in the export's language: an Arabic export names the
+ * phone app "فري ستايل ليبري لنك" even when the report is read in English.
+ * Known product names are shown in the report language; anything else is
+ * printed exactly as exported.
+ */
+const DEVICE_NAMES: { ar: string; en: string }[] = [
+  { ar: "فري ستايل ليبري لنك", en: "FreeStyle LibreLink" },
+];
+
+export function deviceDisplayName(name: string, lang: ReportLang): string {
+  const known = DEVICE_NAMES.find((d) => d.ar === name || d.en === name);
+  return known ? known[lang] : name;
+}
+
+/** Device names joined for a header line, in the report language. */
+export function deviceList(names: string[], lang: ReportLang): string {
+  if (names.length === 0) return "—";
+  return names
+    .map((n) => deviceDisplayName(n, lang))
+    .join(lang === "ar" ? "، " : ", ");
 }
 
 /** "(24س)" / "(16س 48د)" style duration from a % of a day. */

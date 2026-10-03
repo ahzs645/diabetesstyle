@@ -52,11 +52,56 @@ function inPeriod(time: Date, period: ReportPeriod): boolean {
   return time >= period.start && time < period.end;
 }
 
+// Whether a readings array is in time order, checked once per array. The
+// parser sorts, so this is true for every real export, but a hand-built
+// LibreExport need not be.
+const sortedCache = new WeakMap<GlucoseReading[], boolean>();
+
+function isSortedByTime(readings: GlucoseReading[]): boolean {
+  let sorted = sortedCache.get(readings);
+  if (sorted === undefined) {
+    sorted = true;
+    for (let i = 1; i < readings.length; i++) {
+      if (readings[i].time < readings[i - 1].time) {
+        sorted = false;
+        break;
+      }
+    }
+    sortedCache.set(readings, sorted);
+  }
+  return sorted;
+}
+
+/** Index of the first reading at or after `time` in a time-sorted array. */
+function lowerBound(readings: GlucoseReading[], time: Date): number {
+  const t = time.getTime();
+  let lo = 0;
+  let hi = readings.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (readings[mid].time.getTime() < t) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * Readings inside the period. Every report calls this on every render, and a
+ * long export holds ~100k readings, so on the (always) sorted parser output
+ * it slices between two binary searches instead of scanning the whole array.
+ */
 export function readingsInPeriod(
   data: LibreExport,
   period: ReportPeriod,
 ): GlucoseReading[] {
-  return data.readings.filter((r) => inPeriod(r.time, period));
+  const { readings } = data;
+  if (!isSortedByTime(readings)) {
+    return readings.filter((r) => inPeriod(r.time, period));
+  }
+  return readings.slice(
+    lowerBound(readings, period.start),
+    lowerBound(readings, period.end),
+  );
 }
 
 /** Minutes elapsed since local midnight. */

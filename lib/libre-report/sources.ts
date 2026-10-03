@@ -1,5 +1,11 @@
 import { ea1cPercent, ngspToIfcc } from "./a1c";
-import { dayKey, makePeriod, startOfDay, type ReportPeriod } from "./stats";
+import {
+  dayKey,
+  makePeriod,
+  readingsInPeriod,
+  startOfDay,
+  type ReportPeriod,
+} from "./stats";
 import type { GlucoseReading, LibreExport } from "./types";
 
 /**
@@ -61,6 +67,18 @@ export interface SourceSummary {
  * appears. Sources with no readings at all (event-only serials) are skipped.
  */
 export function summarizeSources(data: LibreExport): SourceSummary[] {
+  // Several reports ask for this on every render; the answer only depends
+  // on the export, so compute it once per export object.
+  const cached = summaryCache.get(data);
+  if (cached) return cached;
+  const summary = computeSourceSummary(data);
+  summaryCache.set(data, summary);
+  return summary;
+}
+
+const summaryCache = new WeakMap<LibreExport, SourceSummary[]>();
+
+function computeSourceSummary(data: LibreExport): SourceSummary[] {
   const bySerial = new Map<
     string,
     {
@@ -170,10 +188,6 @@ function buildWindow(
   };
 }
 
-function inPeriod(time: Date, period: ReportPeriod): boolean {
-  return time >= period.start && time < period.end;
-}
-
 /**
  * The merged view every other report uses: all sources pooled over the
  * period. This is the row the export supports.
@@ -182,7 +196,7 @@ export function mergedWindow(
   data: LibreExport,
   period: ReportPeriod,
 ): SourceWindow {
-  const inside = data.readings.filter((r) => inPeriod(r.time, period));
+  const inside = readingsInPeriod(data, period);
   return buildWindow(
     null,
     inside.filter((r) => r.historic),
@@ -203,8 +217,8 @@ export function sourceWindow(
   serial: string,
   period: ReportPeriod,
 ): SourceWindow {
-  const inside = data.readings.filter(
-    (r) => r.serial === serial && inPeriod(r.time, period),
+  const inside = readingsInPeriod(data, period).filter(
+    (r) => r.serial === serial,
   );
   return buildWindow(
     serial,
